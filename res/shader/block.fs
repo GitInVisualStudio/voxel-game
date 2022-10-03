@@ -16,7 +16,6 @@ in vec4 FragPosLightSpace;
 uniform sampler2D texture1;
 uniform samplerCube skybox;
 uniform sampler2D depthMap;
-uniform sampler2D volumeMap;
 
 uniform Light light;
 uniform vec3 viewPos;
@@ -85,15 +84,9 @@ void main()
 
     float shadow = shadowCalc(FragPosLightSpace, norm, lightDir);
 
-    // vec2 uv = gl_FragCoord.xy / vec2(1280, 720);
-
-    // shadow += texture(volumeMap, uv).r;
-    // shadow = max(shadow, 1);
-
     vec3 result = ambient + (1.0 - shadow) * (specular + diffuse);
     result *= texColor.rgb;
 
-    // vec3 fogTexture = texture(skybox, -viewDir).rgb;
     vec3 fogTexture = vec3(0.8, 0.9, 1.0);
     result = result * fog + fogTexture * (1 - fog);
     

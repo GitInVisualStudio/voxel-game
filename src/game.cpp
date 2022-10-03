@@ -42,7 +42,6 @@ Game::Game(int width, int height) {
     this->blockShader->setInt("texture1", 0);
     this->blockShader->setInt("skybox", 1);
     this->blockShader->setInt("depthMap", 2);
-    this->blockShader->setInt("volumeMap", 5);
 
     this->leafShader = new Shader("res/shader/leaf.vs", "res/shader/block.fs");
     this->leafShader->use();
