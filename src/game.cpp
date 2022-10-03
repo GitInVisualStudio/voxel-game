@@ -313,6 +313,8 @@ Game::~Game() {
     delete this->depthBuffer;
     delete this->reflectionBuffer;
     delete this->reflectionShader;
+    delete this->volumeBuffer;
+    delete this->volumeShader;
     for (Chunk* chunk : this->chunks)
         delete chunk;
     delete this->camera;

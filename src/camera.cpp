@@ -4,6 +4,10 @@ Camera::Camera(glm::vec3 position, glm::vec3 worldUp){
     this->position = position;
     this->worldUp = worldUp;
     this->dir = glm::vec3(0.0f, 0.0f, -1.0f);
+    this->yaw = 0;
+    this->pitch = 0;
+    this->lastX = this->lastY = 0;
+    this->init = false;
     updateVectors();
 }
 
