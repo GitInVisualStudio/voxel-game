@@ -228,9 +228,6 @@ void Game::render() {
     glActiveTexture(GL_TEXTURE4);
     this->dudvMap.bind();
 
-    glActiveTexture(GL_TEXTURE5);
-    glBindTexture(GL_TEXTURE_2D, this->volumeBuffer->getDepthMap());
-
     this->renderDepthmap(lightSpaceMatrix);
 
     this->updateShader(blockShader, lightSpaceMatrix, lightPos);
@@ -269,6 +266,7 @@ void Game::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     this->skybox->render(this->camera, this->projection);
     this->waterShader->use();
+    // this is the bloom render size
     this->waterShader->setVec2("screenSize", glm::vec2(512, 512));
 
     for(const auto& pair : indices) {
@@ -287,15 +285,18 @@ void Game::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     this->skybox->render(this->camera, this->projection);
 
-    bool flag = false;
-    for(const auto& pair : indices) {
-        Chunk* chunk = this->chunks[pair.first];
-        if (chunk->getShouldUpdate() && !flag) {
-            chunk->setShouldUpdate(false);
+
+    for (int i = (int)indices.size() - 1; i >= 0; i--) {
+        Chunk* chunk = this->chunks[indices[i].first];
+        if (chunk->getShouldUpdate()) {
             chunk->generateMesh();
             chunk->generateBuffer();
-            flag = true;
+            chunk->setShouldUpdate(false);
+            break;
         }
+    }
+    for(const auto& pair : indices) {
+        Chunk* chunk = this->chunks[pair.first];
         chunk->render(blockShader);
         chunk->renderWater(waterShader);
         chunk->renderTransparent(leafShader);

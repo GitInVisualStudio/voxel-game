@@ -24,7 +24,7 @@ void main()
 {             
     vec4 color = vec4(0);
     vec2 tileSize = 1.0 / textureSize(colorMap, 0);
-    int size = 2;
+    const int size = 2;
     for (int x = -size; x <= size; x++) {
         for (int y = -size; y <= size; y++) {
             color += getColor(TexCoords + vec2(x, y) * tileSize) * kernel[(x + size) * 5 + y + size];

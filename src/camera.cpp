@@ -12,7 +12,7 @@ Camera::Camera(glm::vec3 position, glm::vec3 worldUp){
 }
 
 void Camera::processKeyboard(Camera_Movement movement, float deltaTime){
-    float cameraSpeed = 10.0f * deltaTime;
+    float cameraSpeed = 50.0f * deltaTime;
     
     switch(movement){
         case LEFT:

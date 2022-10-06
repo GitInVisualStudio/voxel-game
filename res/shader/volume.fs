@@ -11,12 +11,6 @@ uniform sampler2D depthMap;
 uniform mat4 lightSpaceMatrix;
 uniform vec3 viewPos;
 
-const float kernel[] = float[] (
-    1.0/16.0, 1.0/8.0, 1.0/16.0,
-    1.0/8.0, 1.0/4.0, 1.0/16.0,
-    1.0/15.0, 1.0/8.0, 1.0/16.0
-);
-
 float shadowCalc(vec4 fragPosLightSpace) {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
@@ -24,14 +18,12 @@ float shadowCalc(vec4 fragPosLightSpace) {
     if (projCoords.z > 1.0)
         return 0.0;
 
-    float bias = 0.002; 
+    const float bias = 0.002; 
     float currentDepth = projCoords.z;
-    float shadow = 0;
-    vec2 texelSize = 1.0 / textureSize(depthMap, 0);
     float intensity = exp(-pow(length(vec2(0.5) - projCoords.xy) * 2.2, 15.0));
     if (intensity < 0)
         return 0.0;
-    return shadow += (currentDepth - bias > texture(depthMap, projCoords.xy).r ? 1.0 : 0.0);        
+    return (currentDepth - bias > texture(depthMap, projCoords.xy).r ? 1.0 : 0.0);        
 }
 
 void main()
@@ -49,8 +41,6 @@ void main()
         sum += shadowCalc(lightSpaceMatrix * vec4(currentPos, 1.0));
     }
     sum /= N_STEPS;
-    sum *= 1.5;
-    sum = min(sum, 1);
     vec3 shadowColor = vec3(sum);
     FragColor = vec4(shadowColor, 1);
 } 

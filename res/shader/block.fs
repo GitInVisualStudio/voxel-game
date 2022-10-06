@@ -20,13 +20,7 @@ uniform sampler2D depthMap;
 uniform Light light;
 uniform vec3 viewPos;
 
-const float kernel[] = float[] (
-    1.0/16.0, 1.0/8.0, 1.0/16.0,
-    1.0/8.0, 1.0/4.0, 1.0/16.0,
-    1.0/15.0, 1.0/8.0, 1.0/16.0
-);
-
-float shadowCalc(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
+float shadowCalc(const vec4 fragPosLightSpace, const vec3 normal, const vec3 lightDir, const vec2 texelSize) {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
 
@@ -36,7 +30,6 @@ float shadowCalc(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
     float bias = max(0.01 * (1.0 - dot(normal, lightDir)), 0.001); 
     float currentDepth = projCoords.z;
     float shadow = 0;
-    vec2 texelSize = 1.0 / textureSize(depthMap, 0);
     float intensity = exp(-pow(length(vec2(0.5) - projCoords.xy) * 2.2, 15.0));
     if (intensity < 0)
         return 0.0;
@@ -44,12 +37,11 @@ float shadowCalc(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
     {
         for(int y = -1; y <= 1; ++y)
         {
-            float strenght = kernel[(x + 1) * 3 + y + 1];
             float pcfDepth = texture(depthMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += (currentDepth - bias > pcfDepth ? 1.0 : 0.0) * strenght;        
+            shadow += (currentDepth - bias > pcfDepth ? 1.0 : 0.0);        
         }    
     }
-    return shadow * intensity;
+    return shadow * intensity/9;
 }
 
 void main()
@@ -82,7 +74,8 @@ void main()
     float fog = exp(-pow((dis * 0.012), 2.0));
     fog = clamp(fog, 0.4, 1.0);
 
-    float shadow = shadowCalc(FragPosLightSpace, norm, lightDir);
+    vec2 texelSize = 1.0 / textureSize(depthMap, 0);
+    float shadow = shadowCalc(FragPosLightSpace, norm, lightDir, texelSize);
 
     vec3 result = ambient + (1.0 - shadow) * (specular + diffuse);
     result *= texColor.rgb;

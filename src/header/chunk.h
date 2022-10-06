@@ -8,6 +8,7 @@
 #include "texture_atlas.h"
 #include "worldgen.h"
 #include "vertex_array.h"
+#include "perlin_noise.h"
 
 class Game;
 class Camera;
@@ -17,6 +18,7 @@ class Chunk {
     public:
         constexpr static int C_WIDTH = 16, C_HEIGHT = 64, WATER_HEIGHT = 18;
         static glm::vec3 CHUNK_SIZE;
+        static siv::PerlinNoise perlin, perlin2, perlin3;
 
     private:
         Block blocks[C_WIDTH * C_WIDTH * C_HEIGHT];

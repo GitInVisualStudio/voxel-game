@@ -3,10 +3,12 @@
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include "header/stb_image.h"
-#include "header/perlin_noise.h"
 #include <math.h>
 
 glm::vec3 Chunk::CHUNK_SIZE = glm::vec3(C_WIDTH, C_HEIGHT, C_WIDTH);
+siv::PerlinNoise Chunk::perlin;
+siv::PerlinNoise Chunk::perlin2;
+siv::PerlinNoise Chunk::perlin3;
 
 Chunk::Chunk(glm::vec3 pos, Game* game) {
     this->position = pos;
@@ -28,9 +30,6 @@ void Chunk::load(glm::vec3 pos) {
     this->waterMesh.clear();
     this->shouldUpdate = true;
     this->position = pos;
-    siv::PerlinNoise perlin(2345);
-    siv::PerlinNoise perlin2(13456);
-    siv::PerlinNoise perlin3(234567);
 
     const float freq = 1 / (float)C_WIDTH * 0.25f;
     const float freq2 = 1 / (float)(C_WIDTH) * 0.15f;

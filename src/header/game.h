@@ -13,7 +13,7 @@ class Shader;
 
 class Game {
     private:
-        constexpr static int RENDER_DISTANCE = 12;
+        constexpr static int RENDER_DISTANCE = 14;
 
         Camera* camera;
         Window* window;
