@@ -36,7 +36,6 @@ class Game {
         void updateChunks();
         void setupShader(Shader* shader);
         void updateShader(Shader* shader, glm::mat4& lightSpace, glm::vec3& lightPos);
-        void renderDepthmap(glm::mat4& lightSpace);
         glm::mat4 getLightSpaceMatrix(glm::vec3& pos, float near, float far, float size);
     
     public:

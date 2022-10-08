@@ -239,8 +239,6 @@ void Game::render() {
     glActiveTexture(GL_TEXTURE4);
     this->dudvMap.bind();
 
-    // this->renderDepthmap(lightSpaceMatrix);
-
     this->depthShader->use();
     this->depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
     this->depthBuffer->use();
@@ -450,22 +448,6 @@ void Game::updateShader(Shader* shader, glm::mat4& lightSpace, glm::vec3& lightP
     shader->setMat4("view", camera->getViewMatrix());
     shader->setMat4("lightSpaceMatrix", lightSpace);
     shader->setVec3("light.direction", lightPos);
-}
-
-void Game::renderDepthmap(glm::mat4& lightSpace) {
-    this->depthShader->use();
-    this->depthShader->setMat4("lightSpaceMatrix", lightSpace);
-    this->depthBuffer->use();
-    glClear(GL_DEPTH_BUFFER_BIT);
-    
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, this->depthBuffer->getDepthMap());
-    for (Chunk* c : this->chunks) {
-        c->render(depthShader);
-        c->renderTransparent(depthShader);
-    }
-    
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 glm::mat4 Game::getLightSpaceMatrix(glm::vec3& pos, float near, float far, float size) {
