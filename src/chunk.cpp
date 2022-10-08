@@ -25,9 +25,11 @@ double rand_float()
 }
 
 void Chunk::load(glm::vec3 pos) {    
+    //clear all old meshes, otherwise old chunk will get rendered at the wrong position
     this->solidMesh.clear();
     this->transparentMesh.clear();
     this->waterMesh.clear();
+
     this->shouldUpdate = true;
     this->position = pos;
 
@@ -83,6 +85,9 @@ Chunk::~Chunk() {
 }
 
 void Chunk::generateMesh() {
+    this->solidMesh.clear();
+    this->transparentMesh.clear();
+    this->waterMesh.clear();
 
     for (int y = C_HEIGHT - 1; y >= 0; y--) {
         bool filled = true;
@@ -131,7 +136,8 @@ void Chunk::generateBuffer() {
     this->waterMesh.unbind();
 }
 
-void Chunk::render(Shader* shader) {
+void Chunk::renderMesh(Shader* shader, VertexArray<unsigned int>& mesh) {
+
     shader->use();
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model,this->position);
@@ -139,29 +145,19 @@ void Chunk::render(Shader* shader) {
 
     shader->setMat4("model", model);
 
-    this->solidMesh.render();
+    mesh.render();
+}
+
+void Chunk::render(Shader* shader) {
+    this->renderMesh(shader, this->solidMesh);
 }
 
 void Chunk::renderTransparent(Shader* shader) {
-    shader->use();
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model,this->position);
-    model = glm::scale(model, glm::vec3(1.0f));
-
-    shader->setMat4("model", model);
-
-    this->transparentMesh.render();
+    this->renderMesh(shader, this->transparentMesh);
 }
 
 void Chunk::renderWater(Shader* shader) {
-    shader->use();
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model,this->position);
-    model = glm::scale(model, glm::vec3(1.0f));
-
-    shader->setMat4("model", model);
-
-    this->waterMesh.render();
+    this->renderMesh(shader, this->waterMesh);
 }
 
 Block& Chunk::getBlockAt(const int x, const int y, const int z) {
@@ -179,7 +175,7 @@ Block& Chunk::getBlockAt(glm::vec3 pos) {
     return this->getBlockAt(pos.x, pos.y, pos.z);
 }
 
-glm::vec3 Chunk::getPos() const {
+glm::vec3& Chunk::getPos() {
     return this->position;
 }
 

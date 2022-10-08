@@ -4,6 +4,7 @@
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/vector_angle.hpp>
 #include "header/vertex_array.h"
 #include <algorithm>
 
@@ -15,6 +16,7 @@ Game::Game(int width, int height) {
     this->height = height;
     this->deltaTime = 0;
     this->wireframe = false;
+    this->prevChunk = NULL;
     this->camera = new Camera(glm::vec3(0.0f, Chunk::C_HEIGHT, 0), glm::vec3(0.0f, 1.0f, 0.0f));
     this->window = new Window(width, height, "Voxel game", __framebuffer_size_callback);
     this->projection = glm::perspective(glm::radians(75.0f), this->width / (float)this->height, 0.1f, 100.0f);
@@ -70,7 +72,6 @@ Game::Game(int width, int height) {
     this->volumeShader->setInt("texture1", 0);
     this->volumeShader->setInt("depthMap", 2);
 
-
     //TODO: generate terrain
     for (int x = 0; x < RENDER_DISTANCE*Chunk::C_WIDTH; x+=Chunk::C_WIDTH) {
         for (int z = 0; z < RENDER_DISTANCE*Chunk::C_WIDTH; z+=Chunk::C_WIDTH) {
@@ -104,8 +105,10 @@ void Game::updateChunks() {
                 pos += out;
                 this->chunks[i]->load(pos);
                 neighbour = this->getChunkAt(pos.x - dir.x * Chunk::C_WIDTH, pos.y, pos.z - dir.z * Chunk::C_WIDTH);
-                if (neighbour)
+                if (neighbour) {
                     neighbour->setShouldUpdate(true);
+                }
+                    
             }
         }
     }
@@ -137,7 +140,6 @@ void Game::start() {
     quad.setAttribute(1, 2, GL_FLOAT, 5, 3);
     quad.unbind();
         
-    unsigned int fps = 0;
     double fpsTime = glfwGetTime();
 
     Shader volumeQuad("res/shader/quad.vs", "res/shader/volumeQuad.fs");
@@ -152,16 +154,14 @@ void Game::start() {
 
     while(window->isRunning()) {
 
-        fps++;
+        this->deltaTime = glfwGetTime() - lastTime;
+        lastTime = glfwGetTime();
 
         if (glfwGetTime() - fpsTime > 1) {
-            std::cout << "FPS: " << fps << std::endl;
-            fps = 0;
+            std::cout << "FPS: " << 1.0/deltaTime << std::endl;
             fpsTime = glfwGetTime();
         }
 
-        this->deltaTime = glfwGetTime() - lastTime;
-        lastTime = glfwGetTime();
         
         this->processInput();
 
@@ -188,17 +188,28 @@ void Game::start() {
 }
 
 void Game::render() {
-    this->updateChunks();
 
-    std::vector<std::pair<int, float>> indices;  
+    std::vector<std::pair<int, float>> indices;
+    glm::vec3 cameraPos = this->camera->getPosition();
+    glm::vec3 dir = this->camera->getDirection();
+    Chunk* currentChunk = this->getChunkAt(cameraPos);
+    dir *= 32;
+    cameraPos -= dir;
+    if (currentChunk == NULL) currentChunk = this->chunks[0];
 
-    glm::vec3 pos = this->getChunkAt(this->camera->getPosition())->getPos();
+    if (currentChunk != prevChunk) {
+        prevChunk = currentChunk;
+        this->updateChunks();
+    }
 
     for (unsigned int i = 0; i < this->chunks.size(); i++) {
         glm::vec3 chunkPos = this->chunks[i]->getPos();
-        indices.push_back({i, glm::distance(pos, chunkPos)});
+        float angle = glm::acos(glm::dot(this->camera->getDirection(), glm::normalize(chunkPos - cameraPos)));
+        if (angle < glm::radians(75.0)) { //stupid threshold
+            indices.push_back({i, glm::distance(currentChunk->getPos(), chunkPos)});
+        }
     }        
-
+    
     std::sort(indices.begin(), indices.end(), [](const auto& a, const auto& b) {
         return a.second > b.second;
     });
@@ -228,7 +239,23 @@ void Game::render() {
     glActiveTexture(GL_TEXTURE4);
     this->dudvMap.bind();
 
-    this->renderDepthmap(lightSpaceMatrix);
+    // this->renderDepthmap(lightSpaceMatrix);
+
+    this->depthShader->use();
+    this->depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+    this->depthBuffer->use();
+    glClear(GL_DEPTH_BUFFER_BIT);
+    
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, this->depthBuffer->getDepthMap());
+    for (const auto& pair : indices) {
+        Chunk* c = this->chunks[pair.first];
+        c->render(depthShader);
+        c->renderTransparent(depthShader);
+    }
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 
     this->updateShader(blockShader, lightSpaceMatrix, lightPos);
     this->updateShader(reflectionShader, lightSpaceMatrix, lightPos);
@@ -242,7 +269,8 @@ void Game::render() {
     this->volumeBuffer->use();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    for(const auto& chunk : this->chunks) {
+    for(const auto& pair : indices) {
+        Chunk* chunk = this->chunks[pair.first];
         chunk->render(this->volumeShader);
         chunk->renderTransparent(this->volumeShader);
         chunk->renderWater(this->volumeShader);
@@ -404,7 +432,7 @@ Chunk* Game::getChunkAt(glm::vec3 pos) {
     for (Chunk* c : this->chunks) 
         if (glm::all(glm::greaterThanEqual(pos, c->getPos())) && glm::all(glm::lessThan(pos, c->getPos() + Chunk::CHUNK_SIZE))) 
             return c;
-    return this->chunks[0];
+    return NULL;
 }
 
 void Game::setupShader(Shader* shader) {

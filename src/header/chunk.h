@@ -26,6 +26,7 @@ class Chunk {
         VertexArray<unsigned int> solidMesh, transparentMesh, waterMesh;
         glm::vec3 position;
         Game* game;
+        void renderMesh(Shader* shader, VertexArray<unsigned int>& mesh);
 
     public:
         Chunk(glm::vec3 pos, Game* game);
@@ -49,7 +50,7 @@ class Chunk {
          */
         Block& getBlockAt(const int x, const int y, const int z);
         Block& getBlockAt(glm::vec3 pos);
-        glm::vec3 getPos() const;
+        glm::vec3& getPos();
 };
 
 #endif

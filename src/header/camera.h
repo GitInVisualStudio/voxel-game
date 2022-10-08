@@ -35,7 +35,7 @@ class Camera{
         void processKeyboard(Camera_Movement movement, float deltaTime);
         void processMouse(float x, float y);
         glm::mat4 getViewMatrix() const;
-        glm::vec3 getPosition() const;
+        glm::vec3& getPosition();
         glm::vec3 getDirection() const;
 };
 

@@ -14,7 +14,7 @@ class Shader;
 class Game {
     private:
         constexpr static int RENDER_DISTANCE = 14;
-
+        Chunk* prevChunk;
         Camera* camera;
         Window* window;
         Framebuffer* depthBuffer;

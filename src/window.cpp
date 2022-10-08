@@ -11,7 +11,7 @@ Window::Window(int width, int height, const char* title, callback_func callback)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     
-    // glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
 
     //only use core features of OpenGL
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -49,7 +49,7 @@ bool Window::isRunning() {
 }
 
 void Window::update() {
-    glfwSwapBuffers(this->window);
-    // glFlush();
+    // glfwSwapBuffers(this->window);
+    glFlush();
     glfwPollEvents();
 }

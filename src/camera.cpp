@@ -76,7 +76,7 @@ glm::mat4 Camera::getViewMatrix() const {
     return glm::lookAt(position, position + dir, up);
 }
 
-glm::vec3 Camera::getPosition() const {
+glm::vec3& Camera::getPosition() {
     return this->position;
 }
 

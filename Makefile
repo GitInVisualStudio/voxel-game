@@ -20,7 +20,7 @@ endif
 
 compile: setup $(OBJS)
 	$(CC) -o $(BUILD_DIR)$(OUTPUT_FILE) $(OBJS) $(CFLAGS) $(LIBS)
-	# rm $(SRC_DIR)*.o
+	rm $(SRC_DIR)*.o
 
 %.o: %.cpp
 	$(CC) -c $< -o $@ $(CFLAGS)
