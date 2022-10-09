@@ -19,8 +19,8 @@ Game::Game(int width, int height) {
     this->prevChunk = NULL;
     this->camera = new Camera(glm::vec3(0.0f, Chunk::C_HEIGHT, 0), glm::vec3(0.0f, 1.0f, 0.0f));
     this->window = new Window(width, height, "Voxel game", __framebuffer_size_callback);
-    this->projection = glm::perspective(glm::radians(75.0f), this->width / (float)this->height, 0.1f, 100.0f);
-    const int SHADOW_WIDTH = 1024*6, SHADOW_HEIGHT = 1024*6;
+    this->projection = glm::perspective(glm::radians(FOV), this->width / (float)this->height, NEAR_PLANE, FAR_PLANE);
+    constexpr int SHADOW_WIDTH = 1024*5, SHADOW_HEIGHT = 1024*5;
     this->depthBuffer = new Framebuffer(SHADOW_WIDTH, SHADOW_HEIGHT, true, false);
     this->bloomBuffer = new Framebuffer(512, 512, true, true);
     this->reflectionBuffer = new Framebuffer(512, 512, true, true);
@@ -191,6 +191,7 @@ void Game::render() {
 
     std::vector<std::pair<int, float>> indices;
     glm::vec3 cameraPos = this->camera->getPosition();
+    cameraPos.y = 0;
     glm::vec3 dir = this->camera->getDirection();
     Chunk* currentChunk = this->getChunkAt(cameraPos);
     dir *= 32;
@@ -205,7 +206,7 @@ void Game::render() {
     for (unsigned int i = 0; i < this->chunks.size(); i++) {
         glm::vec3 chunkPos = this->chunks[i]->getPos();
         float angle = glm::acos(glm::dot(this->camera->getDirection(), glm::normalize(chunkPos - cameraPos)));
-        if (angle < glm::radians(75.0)) { //stupid threshold
+        if (angle < glm::radians(FOV)) {
             indices.push_back({i, glm::distance(currentChunk->getPos(), chunkPos)});
         }
     }        
@@ -221,7 +222,7 @@ void Game::render() {
     float angle = glfwGetTime() * 0.01;
     lightPos = glm::rotateY(lightPos, angle);
     glm::mat4 lightSpaceMatrix;
-    lightSpaceMatrix = this->getLightSpaceMatrix(lightPos, near_plane, far_plane, 75.0f);
+    lightSpaceMatrix = this->getLightSpaceMatrix(lightPos, near_plane, far_plane, SHADOW_SIZE);
     lightPos = -lightPos;
 
     glActiveTexture(GL_TEXTURE0);
@@ -359,7 +360,7 @@ void Game::framebuffer_size_callback(int width, int height) {
     this->width = width;
     this->height = height;
     glViewport(0, 0, width, height);
-    this->projection = glm::perspective(glm::radians(75.0f), this->width / (float)this->height, 0.1f, 100.0f);
+    this->projection = glm::perspective(glm::radians(FOV), this->width / (float)this->height, NEAR_PLANE, FAR_PLANE);
     this->setupShader(this->blockShader);
     this->setupShader(this->waterShader);
     this->waterShader->setVec2("screenSize", glm::vec2(this->width, this->height));

@@ -36,6 +36,9 @@ void main() {
     FragPos = vec3(model * vec4(aPos, 1.0));
     Normal = mat3(transpose(inverse(model))) * aNormal;
     FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
+    FragPosLightSpace.xyz /= FragPosLightSpace.w;
+    FragPosLightSpace.xyz = FragPosLightSpace.xyz * 0.5 + 0.5;
+    FragPosLightSpace.z -= 0.002;
     vec4 pos = projection * view * model * vec4(aPos, 1.0);
     gl_Position = pos;
 }

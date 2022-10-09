@@ -6,7 +6,7 @@ in vec2 TexCoords;
 in vec3 FragPos;
 
 uniform sampler2D texture1;
-uniform sampler2D depthMap;
+uniform sampler2DShadow depthMap;
 
 uniform mat4 lightSpaceMatrix;
 uniform vec3 viewPos;
@@ -18,19 +18,14 @@ float shadowCalc(vec4 fragPosLightSpace) {
     if (projCoords.z > 1.0)
         return 0.0;
 
-    const float bias = 0.002; 
-    float currentDepth = projCoords.z;
-    float intensity = exp(-pow(length(vec2(0.5) - projCoords.xy) * 2.2, 15.0));
-    if (intensity < 0)
-        return 0.0;
-    return (currentDepth - bias > texture(depthMap, projCoords.xy).r ? 1.0 : 0.0);        
+    projCoords.z -= 0.002; 
+    return 1 - texture(depthMap, projCoords);        
 }
 
 void main()
 {
     vec2 texCoords = TexCoords / textureSize(texture1, 0);
     vec4 color = texture(texture1, texCoords);
-    vec4 fragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
     if (color.a < 0.1)
         discard;
     vec3 dist = viewPos - FragPos;

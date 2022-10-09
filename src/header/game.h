@@ -14,6 +14,7 @@ class Shader;
 class Game {
     private:
         constexpr static int RENDER_DISTANCE = 14;
+        constexpr static float NEAR_PLANE = 0.1, FAR_PLANE = 100, FOV = 75.0, SHADOW_SIZE = 75.0;
         Chunk* prevChunk;
         Camera* camera;
         Window* window;

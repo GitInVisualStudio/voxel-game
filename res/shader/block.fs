@@ -15,33 +15,26 @@ in vec4 FragPosLightSpace;
 
 uniform sampler2D texture1;
 uniform samplerCube skybox;
-uniform sampler2D depthMap;
+uniform sampler2DShadow depthMap;
 
 uniform Light light;
 uniform vec3 viewPos;
 
 float shadowCalc(const vec4 fragPosLightSpace, const vec3 normal, const vec3 lightDir, const vec2 texelSize) {
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    projCoords = projCoords * 0.5 + 0.5;
-
-    if (projCoords.z > 1.0)
+    if (fragPosLightSpace.z > 1.0)
         return 0.0;
-
-    float bias = max(0.01 * (1.0 - dot(normal, lightDir)), 0.001); 
-    float currentDepth = projCoords.z;
-    float shadow = 0;
-    float intensity = exp(-pow(length(vec2(0.5) - projCoords.xy) * 2.2, 15.0));
+    float intensity = exp(-pow(length(vec2(0.5) - fragPosLightSpace.xy) * 2.2, 15.0));
     if (intensity < 0)
         return 0.0;
-    for(int x = -1; x <= 1; ++x)
-    {
-        for(int y = -1; y <= 1; ++y)
-        {
-            float pcfDepth = texture(depthMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += (currentDepth - bias > pcfDepth ? 1.0 : 0.0);        
-        }    
+    float shadow = 0;
+    vec3 shadowCoords = fragPosLightSpace.xyz;
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            shadowCoords.xy = fragPosLightSpace.xy + vec2(x, y) * texelSize;
+            shadow += texture(depthMap, shadowCoords);
+        }
     }
-    return shadow * intensity/9;
+    return intensity * (1 - shadow/9);
 }
 
 void main()
