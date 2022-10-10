@@ -25,9 +25,6 @@ class Game {
         bool wireframe;
         std::vector<Chunk*> chunks;
         void updateChunks();
-        void setupShader(Shader* shader);
-        void updateShader(Shader* shader, glm::mat4& lightSpace, glm::vec3& lightPos);
-        void renderChunks(std::vector<std::pair<Chunk*, float>>& chunks, Shader* solidShader, Shader* waterShader, Shader* transparentShader);
         glm::mat4 getLightSpaceMatrix(glm::vec3& pos, float near, float far, float size);
     
     public:

@@ -341,23 +341,6 @@ Chunk* Game::getChunkAt(glm::vec3 pos) {
     return NULL;
 }
 
-void Game::setupShader(Shader* shader) {
-    shader->use();
-    shader->setMat4("projection", this->projection);
-    glm::vec3 lightColor(1.0, 0.89, 0.89);
-    shader->setVec3("light.ambient", lightColor * 0.3f);
-    shader->setVec3("light.diffuse", lightColor * 0.5f);
-    shader->setVec3("light.specular", lightColor * 1.0f);
-}
-
-void Game::updateShader(Shader* shader, glm::mat4& lightSpace, glm::vec3& lightPos) {
-    shader->use();
-    shader->setVec3("viewPos", camera->getPosition());
-    shader->setMat4("view", camera->getViewMatrix());
-    shader->setMat4("lightSpaceMatrix", lightSpace);
-    shader->setVec3("light.direction", lightPos);
-}
-
 glm::mat4 Game::getLightSpaceMatrix(glm::vec3& pos, float near, float far, float size) {
     glm::mat4 lightProjection = glm::ortho(-size, size, -size, size, near, far);  
 
@@ -366,15 +349,4 @@ glm::mat4 Game::getLightSpaceMatrix(glm::vec3& pos, float near, float far, float
         camera->getPosition(),
         glm::vec3(0.0, 1.0, 0.0)
     );
-}
-
-void Game::renderChunks(std::vector<std::pair<Chunk*, float>>& chunks, Shader* solidShader, Shader* waterShader, Shader* transparentShader) {
-    for (const auto& chunk : chunks) {
-        if (solidShader)
-            chunk.first->renderSolid(*solidShader);
-        if (waterShader)
-            chunk.first->renderWater(*waterShader);
-        if (transparentShader)
-            chunk.first->renderTransparent(*transparentShader);
-    }
 }
