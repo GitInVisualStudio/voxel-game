@@ -1,7 +1,8 @@
 #include "header/skybox.h"
 
-Skybox::Skybox(std::vector<std::string> images) {
-
+Skybox::Skybox(std::vector<std::string> images, Camera* camera, glm::mat4* projection) {
+    this->camera = camera;
+    this->projection = projection;
     this->mesh = VertexArray<float>({
         // positions          
         -1.0f,  1.0f, -1.0f,
@@ -78,14 +79,14 @@ Skybox::~Skybox() {
     delete this->shader;
 }
 
-void Skybox::render(const Camera* camera, const glm::mat4& projection) {
+void Skybox::render() {
     
     glDepthFunc(GL_LEQUAL);
 
     this->shader->use();
     glm::mat4 view = glm::mat4(glm::mat3(camera->getViewMatrix())); //remove translation
     this->shader->setMat4("view", view);
-    this->shader->setMat4("projection", projection);
+    this->shader->setMat4("projection", *projection);
     
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, this->texture);

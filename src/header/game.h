@@ -1,6 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "renderer_fbo.h"
 #include "chunk.h"
 #include "camera.h"
 #include "window.h"
@@ -8,26 +9,15 @@
 #include "framebuffer.h"
 #include "texture2d.h"
 
-class Chunk;
-class Shader;
-
 class Game {
     private:
         constexpr static int RENDER_DISTANCE = 14;
-        constexpr static float NEAR_PLANE = 0.1, FAR_PLANE = 100, FOV = 75.0, SHADOW_SIZE = 75.0;
-        Chunk* prevChunk;
-        Camera* camera;
-        Window* window;
-        Framebuffer* depthBuffer;
-        Framebuffer* bloomBuffer;
-        Framebuffer* reflectionBuffer;
-        Framebuffer* volumeBuffer;
-        Shader* blockShader;
-        Shader* depthShader;
-        Shader* leafShader;
-        Shader* waterShader;
-        Shader* reflectionShader;
-        Shader* volumeShader;
+        constexpr static float NEAR_PLANE = 0.1, FAR_PLANE = 100, FOV = 75.0, SHADOW_SIZE = 50.0;
+        Chunk *prevChunk;
+        Camera *camera;
+        Window *window;
+        Renderer *worldRenderer;
+        RendererFBO *volumetricRenderer, *depthRenderer, *reflectionRenderer, *bloomRenderer;
         Texture2D dudvMap;
         float deltaTime;
         int width, height;
@@ -37,6 +27,7 @@ class Game {
         void updateChunks();
         void setupShader(Shader* shader);
         void updateShader(Shader* shader, glm::mat4& lightSpace, glm::vec3& lightPos);
+        void renderChunks(std::vector<std::pair<Chunk*, float>>& chunks, Shader* solidShader, Shader* waterShader, Shader* transparentShader);
         glm::mat4 getLightSpaceMatrix(glm::vec3& pos, float near, float far, float size);
     
     public:

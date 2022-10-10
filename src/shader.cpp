@@ -1,9 +1,11 @@
 #include "header/shader.h"
-
 #include <iostream>
 #include <fstream>
 #include <streambuf>
 
+Shader::Shader() {
+    this->handle = 0;
+}
 
 Shader::Shader(const char* vertex, const char* fragment, const char* geometry) {
 
@@ -58,7 +60,7 @@ unsigned int Shader::createShader(const char* path, GLenum type) {
     return shader;
 }
 
-void Shader::use() {
+void Shader::use() const {
     glUseProgram(this->handle);
 }
 
@@ -90,4 +92,8 @@ void Shader::setFloat(const std::string& name, const float value) const {
 void Shader::setVec2(const std::string& name, const glm::vec2& pos) const {
     int location = glGetUniformLocation(this->handle, name.c_str());
     glUniform2fv(location, 1, glm::value_ptr(pos));
+}
+
+bool Shader::valid() const {
+    return this->handle != 0;
 }

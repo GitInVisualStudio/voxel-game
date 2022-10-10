@@ -10,6 +10,8 @@ struct Light {
 
 const float amplitude = 0.08;
 const float period = 0.5;
+const float distortion_strength = 0.003;
+const float distortion_scale = 0.02;
 
 in vec3 FragPos;
 in vec2 TexCoords;
@@ -35,14 +37,14 @@ void main()
     // ambient
     vec3 ambient = light.ambient;
 
-    vec2 distortion = texture(dudvMap, vec2(FragPos.x + time, FragPos.z) * 0.02).rg;
+    vec2 distortion = texture(dudvMap, vec2(FragPos.x + time, FragPos.z) * distortion_scale).rg;
     distortion = distortion * 2 - 1;
-    distortion *= 0.003;
+    distortion *= distortion_strength;
 
 
-    vec2 distortion2 = texture(dudvMap, FragPos.xz * 0.02 + distortion).rg;
+    vec2 distortion2 = texture(dudvMap, FragPos.xz * distortion_scale + distortion).rg;
     distortion2 = distortion2 * 2 - 1;
-    distortion2 *= 0.003;
+    distortion2 *= distortion_strength;
 
     vec3 norm = vec3(0, 1, 0);
     norm.xz += distortion2 * 8;
@@ -55,7 +57,7 @@ void main()
 
     vec2 distortion3 = texture(dudvMap, FragPos.xz * 0.05 + distortion * 5).rg;
     distortion3 = distortion3 * 2 - 1;
-    distortion3 *= 0.003;
+    distortion3 *= distortion_strength;
     vec3 specNorm = vec3(0, 1, 0);
     specNorm.xz += distortion2 * 20 + distortion3 * 5; 
     specNorm = normalize(specNorm);

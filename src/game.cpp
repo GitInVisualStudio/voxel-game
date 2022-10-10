@@ -1,30 +1,26 @@
 #include "header/game.h"
 #include "header/block.h"
+#include "header/vertex_array.h"
 #include "header/texture_atlas.h"
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/vector_angle.hpp>
-#include "header/vertex_array.h"
 #include <algorithm>
+#include <memory>
 
 Game* Game::instance = NULL;
 
-Game::Game(int width, int height) {
+Game::Game(int width, int height) : window(new Window(width, height, "Voxel game", __framebuffer_size_callback)),
+     dudvMap("res/images/dudvmap.png", GL_LINEAR), width(width), height(height)
+{
     Game::instance = this;
-    this->width = width;
-    this->height = height;
     this->deltaTime = 0;
     this->wireframe = false;
     this->prevChunk = NULL;
     this->camera = new Camera(glm::vec3(0.0f, Chunk::C_HEIGHT, 0), glm::vec3(0.0f, 1.0f, 0.0f));
-    this->window = new Window(width, height, "Voxel game", __framebuffer_size_callback);
     this->projection = glm::perspective(glm::radians(FOV), this->width / (float)this->height, NEAR_PLANE, FAR_PLANE);
     constexpr int SHADOW_WIDTH = 1024*5, SHADOW_HEIGHT = 1024*5;
-    this->depthBuffer = new Framebuffer(SHADOW_WIDTH, SHADOW_HEIGHT, true, false);
-    this->bloomBuffer = new Framebuffer(512, 512, true, true);
-    this->reflectionBuffer = new Framebuffer(512, 512, true, true);
-    this->volumeBuffer = new Framebuffer(512, 512, true, true);
 
     this->skybox = new Skybox({
         "res/images/right.jpg",
@@ -33,44 +29,27 @@ Game::Game(int width, int height) {
         "res/images/bottom.jpg",
         "res/images/front.jpg",
         "res/images/back.jpg",
-    });
+    }, this->camera, &this->projection);
 
     glfwSetCursorPosCallback(window->getWindow(), __mouse_callback);
 
-    TextureAtlas* atlas = new TextureAtlas();
+    new TextureAtlas();
+    std::shared_ptr<Shader> solidShader = std::make_shared<Shader>("res/shader/block.vs", "res/shader/block.fs");
+    std::shared_ptr<Shader> waterShader = std::make_shared<Shader>("res/shader/water.vs", "res/shader/water.fs");
+    std::shared_ptr<Shader> transparentShader = std::make_shared<Shader>("res/shader/leaf.vs", "res/shader/block.fs");
+    this->worldRenderer = new Renderer(solidShader, waterShader, transparentShader);
 
-    this->blockShader = new Shader("res/shader/block.vs", "res/shader/block.fs");
-    this->blockShader->use();
-    this->blockShader->setInt("texture1", 0);
-    this->blockShader->setInt("skybox", 1);
-    this->blockShader->setInt("depthMap", 2);
+    std::shared_ptr<Shader> reflectionShader = std::make_shared<Shader>("res/shader/reflection.vs", "res/shader/reflection.fs");
+    this->reflectionRenderer = new RendererFBO(512, 512, true, true, reflectionShader, {}, reflectionShader);
 
-    this->leafShader = new Shader("res/shader/leaf.vs", "res/shader/block.fs");
-    this->leafShader->use();
-    this->leafShader->setInt("texture1", 0);
-    this->leafShader->setInt("skybox", 1);
-    this->leafShader->setInt("depthMap", 2);
+    std::shared_ptr<Shader> depthShader = std::make_shared<Shader>("res/shader/depth.vs", "res/shader/depth.fs");
+    std::shared_ptr<Shader> depthTransparentShader = std::make_shared<Shader>("res/shader/depthLeaf.vs", "res/shader/depth.fs");
+    this->depthRenderer = new RendererFBO(SHADOW_WIDTH, SHADOW_HEIGHT, false, true, depthShader, {}, depthTransparentShader);
 
-    this->reflectionShader = new Shader("res/shader/reflection.vs", "res/shader/reflection.fs");
-    this->reflectionShader->use();
-    this->reflectionShader->setInt("texture1", 0);
-    this->reflectionShader->setInt("skybox", 1);
-    this->reflectionShader->setInt("depthMap", 2);
+    std::shared_ptr<Shader> volumeShader = std::make_shared<Shader>("res/shader/volume.vs", "res/shader/volume.fs");
+    this->volumetricRenderer = new RendererFBO(512, 512, true, true, volumeShader, volumeShader, volumeShader);
 
-    this->waterShader = new Shader("res/shader/water.vs", "res/shader/water.fs");
-    this->waterShader->use();
-    this->waterShader->setInt("texture1", 0);
-    this->waterShader->setInt("skybox", 1);
-    this->waterShader->setInt("depthMap", 2);
-    this->waterShader->setInt("reflectionMap", 3);
-    this->waterShader->setInt("dudvMap", 4);
-
-    this->depthShader = new Shader("res/shader/depth.vs", "res/shader/depth.fs");
-
-    this->volumeShader = new Shader("res/shader/volume.vs", "res/shader/volume.fs");
-    this->volumeShader->use();
-    this->volumeShader->setInt("texture1", 0);
-    this->volumeShader->setInt("depthMap", 2);
+    this->bloomRenderer = new RendererFBO(512, 512, true, true, solidShader, waterShader, transparentShader);
 
     //TODO: generate terrain
     for (int x = 0; x < RENDER_DISTANCE*Chunk::C_WIDTH; x+=Chunk::C_WIDTH) {
@@ -79,8 +58,6 @@ Game::Game(int width, int height) {
             this->chunks.push_back(new_chunk);
         }
     }
-
-    dudvMap = Texture2D("res/images/dudvmap.png", GL_LINEAR);
 }
 
 void Game::updateChunks() {
@@ -145,12 +122,11 @@ void Game::start() {
     Shader volumeQuad("res/shader/quad.vs", "res/shader/volumeQuad.fs");
     Shader bloomQuad("res/shader/quad.vs", "res/shader/bloom.fs");
 
-    this->setupShader(this->blockShader);
-    this->setupShader(this->waterShader);
-    this->waterShader->setVec2("screenSize", glm::vec2(this->width, this->height));
-    this->setupShader(this->leafShader);
-    this->setupShader(this->reflectionShader);
-    this->setupShader(this->volumeShader);
+    this->bloomRenderer->setupShaders(this->projection);
+    this->worldRenderer->setupShaders(this->projection);
+    this->volumetricRenderer->setupShaders(this->projection);
+    this->depthRenderer->setupShaders(this->projection);
+    this->reflectionRenderer->setupShaders(this->projection);
 
     while(window->isRunning()) {
 
@@ -174,14 +150,8 @@ void Game::start() {
 
         //TODO: render post processing
         glDisable(GL_DEPTH_TEST);
-        bloomQuad.use();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, this->bloomBuffer->getColorMap());
-        quad.render(GL_TRIANGLE_STRIP);
-        volumeQuad.use();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, this->volumeBuffer->getColorMap());
-        quad.render(GL_TRIANGLE_STRIP);
+        this->bloomRenderer->renderColorFBO(quad, bloomQuad);
+        this->volumetricRenderer->renderColorFBO(quad, volumeQuad);
         glEnable(GL_DEPTH_TEST);
         window->update();
     }
@@ -189,7 +159,7 @@ void Game::start() {
 
 void Game::render() {
 
-    std::vector<std::pair<int, float>> indices;
+    std::vector<std::pair<Chunk*, float>> sortedChunks;
     glm::vec3 cameraPos = this->camera->getPosition();
     cameraPos.y = 0;
     glm::vec3 dir = this->camera->getDirection();
@@ -203,17 +173,27 @@ void Game::render() {
         this->updateChunks();
     }
 
-    for (unsigned int i = 0; i < this->chunks.size(); i++) {
-        glm::vec3 chunkPos = this->chunks[i]->getPos();
-        float angle = glm::acos(glm::dot(this->camera->getDirection(), glm::normalize(chunkPos - cameraPos)));
+    for (Chunk* chunk : this->chunks) {
+        float angle = glm::acos(glm::dot(this->camera->getDirection(), glm::normalize(chunk->getPos() - cameraPos)));
         if (angle < glm::radians(FOV)) {
-            indices.push_back({i, glm::distance(currentChunk->getPos(), chunkPos)});
+            sortedChunks.push_back({chunk, glm::distance(currentChunk->getPos(), chunk->getPos())});
         }
     }        
     
-    std::sort(indices.begin(), indices.end(), [](const auto& a, const auto& b) {
+    std::sort(sortedChunks.begin(), sortedChunks.end(), [](const auto& a, const auto& b) {
         return a.second > b.second;
     });
+
+    // generate mesh for the nearest chunk
+    for (int i = (int)sortedChunks.size() - 1; i >= 0; i--) {
+        Chunk* chunk = sortedChunks[i].first;
+        if (chunk->getShouldUpdate()) {
+            chunk->generateMesh();
+            chunk->generateBuffer();
+            chunk->setShouldUpdate(false);
+            break;
+        }
+    }
 
     //TODO: render scene for depth buffer
     float near_plane = 0.001f, far_plane = 200.0f;
@@ -232,119 +212,47 @@ void Game::render() {
     glBindTexture(GL_TEXTURE_CUBE_MAP, this->skybox->texture);
 
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, this->depthBuffer->getDepthMap());
+    glBindTexture(GL_TEXTURE_2D, this->depthRenderer->getDepthMap());
 
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, this->reflectionBuffer->getColorMap());
+    glBindTexture(GL_TEXTURE_2D, this->reflectionRenderer->getColorMap());
 
     glActiveTexture(GL_TEXTURE4);
     this->dudvMap.bind();
 
-    this->depthShader->use();
-    this->depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
-    this->depthBuffer->use();
-    glClear(GL_DEPTH_BUFFER_BIT);
-    
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, this->depthBuffer->getDepthMap());
-    for (const auto& pair : indices) {
-        Chunk* c = this->chunks[pair.first];
-        c->render(depthShader);
-        c->renderTransparent(depthShader);
-    }
-    
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-    this->updateShader(blockShader, lightSpaceMatrix, lightPos);
-    this->updateShader(reflectionShader, lightSpaceMatrix, lightPos);
-    this->updateShader(waterShader, lightSpaceMatrix, lightPos);
-    this->waterShader->setFloat("time", glfwGetTime());
-    this->updateShader(leafShader, lightSpaceMatrix, lightPos);
-    this->leafShader->setFloat("time", glfwGetTime());
-    this->updateShader(volumeShader, lightSpaceMatrix, lightPos);
+    this->depthRenderer->updateShaders(this->camera, lightSpaceMatrix, lightPos);
+    this->depthRenderer->render(sortedChunks);
 
     //TODO: render scene for volumetric light
-    this->volumeBuffer->use();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    for(const auto& pair : indices) {
-        Chunk* chunk = this->chunks[pair.first];
-        chunk->render(this->volumeShader);
-        chunk->renderTransparent(this->volumeShader);
-        chunk->renderWater(this->volumeShader);
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    this->volumetricRenderer->updateShaders(this->camera, lightSpaceMatrix, lightPos);
+    this->volumetricRenderer->render(sortedChunks);
 
-    this->reflectionBuffer->use();
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_BACK);
-    for(const auto& pair : indices) {
-        Chunk* chunk = this->chunks[pair.first];
-        chunk->render(this->reflectionShader);
-        chunk->renderTransparent(this->reflectionShader);
-    }
+    this->reflectionRenderer->updateShaders(this->camera, lightSpaceMatrix, lightPos);
+    this->reflectionRenderer->render(sortedChunks, this->skybox);
     glCullFace(GL_FRONT);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     //TODO: render bloom
-    this->bloomBuffer->use();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    this->skybox->render(this->camera, this->projection);
-    this->waterShader->use();
-    // this is the bloom render size
-    this->waterShader->setVec2("screenSize", glm::vec2(512, 512));
-
-    for(const auto& pair : indices) {
-        Chunk* chunk = this->chunks[pair.first];
-        chunk->render(blockShader);
-        chunk->renderWater(waterShader);
-        chunk->renderTransparent(this->leafShader);
-    }
-        
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    this->bloomRenderer->updateShaders(this->camera, lightSpaceMatrix, lightPos);
+    this->bloomRenderer->render(sortedChunks, this->skybox);
 
     // TODO: render as usual
+    this->worldRenderer->updateShaders(this->camera, lightSpaceMatrix, lightPos, glm::vec2(width, height));
     glViewport(0, 0, this->width, this->height);
-    this->waterShader->use();
-    this->waterShader->setVec2("screenSize", glm::vec2(width, height));
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    this->skybox->render(this->camera, this->projection);
-
-
-    for (int i = (int)indices.size() - 1; i >= 0; i--) {
-        Chunk* chunk = this->chunks[indices[i].first];
-        if (chunk->getShouldUpdate()) {
-            chunk->generateMesh();
-            chunk->generateBuffer();
-            chunk->setShouldUpdate(false);
-            break;
-        }
-    }
-    for(const auto& pair : indices) {
-        Chunk* chunk = this->chunks[pair.first];
-        chunk->render(blockShader);
-        chunk->renderWater(waterShader);
-        chunk->renderTransparent(leafShader);
-    }
-    
+    this->worldRenderer->render(sortedChunks, skybox);
 }
 
 Game::~Game() {
     delete this->skybox;
-    delete this->blockShader;
-    delete this->leafShader;
-    delete this->depthShader;
-    delete this->bloomBuffer;
-    delete this->depthBuffer;
-    delete this->reflectionBuffer;
-    delete this->reflectionShader;
-    delete this->volumeBuffer;
-    delete this->volumeShader;
     for (Chunk* chunk : this->chunks)
         delete chunk;
     delete this->camera;
+    delete this->bloomRenderer;
+    delete this->volumetricRenderer;
+    delete this->worldRenderer;
+    delete this->depthRenderer;
     delete this->window;
 }
 
@@ -361,12 +269,11 @@ void Game::framebuffer_size_callback(int width, int height) {
     this->height = height;
     glViewport(0, 0, width, height);
     this->projection = glm::perspective(glm::radians(FOV), this->width / (float)this->height, NEAR_PLANE, FAR_PLANE);
-    this->setupShader(this->blockShader);
-    this->setupShader(this->waterShader);
-    this->waterShader->setVec2("screenSize", glm::vec2(this->width, this->height));
-    this->setupShader(this->reflectionShader);
-    this->setupShader(this->leafShader);
-    this->setupShader(this->volumeShader);
+    this->bloomRenderer->setupShaders(this->projection);
+    this->worldRenderer->setupShaders(this->projection);
+    this->volumetricRenderer->setupShaders(this->projection);
+    this->depthRenderer->setupShaders(this->projection);
+    this->reflectionRenderer->setupShaders(this->projection);
 }
 
 void Game::mouse_callback(double x, double y) {
@@ -459,4 +366,15 @@ glm::mat4 Game::getLightSpaceMatrix(glm::vec3& pos, float near, float far, float
         camera->getPosition(),
         glm::vec3(0.0, 1.0, 0.0)
     );
+}
+
+void Game::renderChunks(std::vector<std::pair<Chunk*, float>>& chunks, Shader* solidShader, Shader* waterShader, Shader* transparentShader) {
+    for (const auto& chunk : chunks) {
+        if (solidShader)
+            chunk.first->renderSolid(*solidShader);
+        if (waterShader)
+            chunk.first->renderWater(*waterShader);
+        if (transparentShader)
+            chunk.first->renderTransparent(*transparentShader);
+    }
 }

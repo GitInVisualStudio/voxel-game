@@ -15,12 +15,12 @@ class VertexArray {
         VertexArray();
         VertexArray(std::vector<T> data);
         ~VertexArray();
-        void use();
+        void use() const;
         static void unbind();
         void clear();
         void insert(T& value);
         void load();
-        void render(unsigned int mode=GL_TRIANGLES);
+        void render(unsigned int mode=GL_TRIANGLES) const;
         void setAttribute(unsigned int index, unsigned int size, unsigned int type, unsigned int stride, unsigned int offset);
 
         /**
@@ -103,12 +103,12 @@ void VertexArray<T>::clear() {
 }
 
 template <typename T>
-void VertexArray<T>::use() {
+void VertexArray<T>::use() const {
     glBindVertexArray(this->handle);
 }
 
 template <typename T>
-void VertexArray<T>::render(unsigned int mode) {
+void VertexArray<T>::render(unsigned int mode) const {
     this->use();
     glDrawArrays(mode, 0, this->triangles);
     glBindVertexArray(0);

@@ -31,7 +31,7 @@ void main()
     vec3 dist = viewPos - FragPos;
     dist /= N_STEPS;
     float sum = 0;
-    for (int i = 1; i <= N_STEPS; i++) {
+    for (int i = 0; i <= N_STEPS; i++) {
         vec3 currentPos = FragPos + dist * i;
         sum += shadowCalc(lightSpaceMatrix * vec4(currentPos, 1.0));
     }

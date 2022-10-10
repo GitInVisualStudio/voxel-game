@@ -3,6 +3,7 @@
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include "header/stb_image.h"
+#include "header/game.h"
 #include <math.h>
 
 glm::vec3 Chunk::CHUNK_SIZE = glm::vec3(C_WIDTH, C_HEIGHT, C_WIDTH);
@@ -136,27 +137,27 @@ void Chunk::generateBuffer() {
     this->waterMesh.unbind();
 }
 
-void Chunk::renderMesh(Shader* shader, VertexArray<unsigned int>& mesh) {
+void Chunk::renderMesh(const Shader& shader, VertexArray<unsigned int>& mesh) {
 
-    shader->use();
+    shader.use();
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model,this->position);
     model = glm::scale(model, glm::vec3(1.0f));
 
-    shader->setMat4("model", model);
+    shader.setMat4("model", model);
 
     mesh.render();
 }
 
-void Chunk::render(Shader* shader) {
+void Chunk::renderSolid(const Shader& shader) {
     this->renderMesh(shader, this->solidMesh);
 }
 
-void Chunk::renderTransparent(Shader* shader) {
+void Chunk::renderTransparent(const Shader& shader) {
     this->renderMesh(shader, this->transparentMesh);
 }
 
-void Chunk::renderWater(Shader* shader) {
+void Chunk::renderWater(const Shader& shader) {
     this->renderMesh(shader, this->waterMesh);
 }
 

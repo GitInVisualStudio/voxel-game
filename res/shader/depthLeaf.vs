@@ -1,0 +1,31 @@
+#version 330 core
+
+layout (location = 0) in uint aData;
+
+const float amplitude = 0.08;
+const float period = 0.5;
+
+uniform mat4 model;
+uniform mat4 lightSpaceMatrix;
+uniform float time;
+out vec2 TexCoords;
+
+uint getData(uint offset, uint size) {
+    return (aData >> offset) & size;
+}
+
+void main() {
+    uint xPos = getData(0u, 31u);
+    uint yPos = getData(5u, 63u);
+    uint zPos = getData(11u, 31u);
+    vec3 aPos = vec3(xPos, yPos, zPos);
+
+    float amp = cos(time * 1.33 * 0.5 + (aPos.x + aPos.z) * 0.15) * amplitude;
+    float t = cos(time * 1.47 + (aPos.x + aPos.z) * 0.2) * 0.5 + 0.5 + time;
+    aPos.x += sin(aPos.y * period + t) * amp;
+    aPos.z += sin(aPos.y * period + t * 1.3) * amp;
+
+    TexCoords = vec2(getData(19u, 127u), getData(26u, 127u));
+    vec4 pos = lightSpaceMatrix * model * vec4(aPos, 1.0);
+    gl_Position = pos;
+}

@@ -25,6 +25,8 @@ const vec3 normals[6] = vec3[](
     vec3(0, 0, -1)
 );
 
+const float epsilon = 0.0005;
+
 void main() {
     uint xPos = getData(0u, 31u);
     uint yPos = getData(5u, 63u);
@@ -38,7 +40,7 @@ void main() {
     FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
     FragPosLightSpace.xyz /= FragPosLightSpace.w;
     FragPosLightSpace.xyz = FragPosLightSpace.xyz * 0.5 + 0.5;
-    FragPosLightSpace.z -= 0.002;
+    FragPosLightSpace.z -= epsilon;
     vec4 pos = projection * view * model * vec4(aPos, 1.0);
     gl_Position = pos;
 }
