@@ -2,7 +2,7 @@
 #include <iostream>
 
 RendererFBO::RendererFBO(int width, int height, bool color, bool depth, std::shared_ptr<Shader> solid, std::shared_ptr<Shader> water, std::shared_ptr<Shader> transparent) 
-: Renderer(solid, water, transparent), Framebuffer(width, height, color, depth) 
+: Renderer(solid, water, transparent), Framebuffer(width, height, color, depth, GL_FRAMEBUFFER) 
 {
 }
 

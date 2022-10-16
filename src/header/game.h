@@ -11,11 +11,12 @@
 
 class Game {
     private:
-        constexpr static int RENDER_DISTANCE = 14;
-        constexpr static float NEAR_PLANE = 0.1, FAR_PLANE = 100, FOV = 75.0, SHADOW_SIZE = 50.0;
+        constexpr static int RENDER_DISTANCE = 16;
+        constexpr static float NEAR_PLANE = 0.1, FAR_PLANE = 150, FOV = 75.0, SHADOW_SIZE = 50.0;
+        constexpr static int SHADOW_WIDTH = 1024*4, SHADOW_HEIGHT = 1024*4;
         Chunk *prevChunk;
         Camera *camera;
-        Window *window;
+        Window window;
         Renderer *worldRenderer;
         RendererFBO *volumetricRenderer, *depthRenderer, *reflectionRenderer, *bloomRenderer;
         Texture2D dudvMap;

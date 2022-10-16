@@ -135,8 +135,8 @@ void Block::setType(BLOCK_TYPE type) {
 
 void Block::addVertices(VertexArray<unsigned int>& mesh, BlockUtils::FACES dir) {
     std::vector<unsigned int> face = BlockUtils::vertices[dir];
-    if (this->type == GRASS) {
-        // there is most definitely a way better solution to this, but i am to lazy to implement those
+    if (this->type == GRASS || this->type == POPPY) {
+        // there is most definitely a way better solution to this, but i am too lazy to implement those
         // this one does the job even tho the normals will be wrong, but idc
         face = BlockUtils::crossVertices;
         if (dir > 1)
@@ -168,5 +168,5 @@ void Block::addVertices(VertexArray<unsigned int>& mesh, BlockUtils::FACES dir) 
 }
 
 bool Block::isSolid() const {
-    return this->type != LEAF && this->type != GRASS && this->type != AIR && this->type != WATER;
+    return this->type != LEAF && this->type != GRASS && this->type != AIR && this->type != WATER && this->type != POPPY;
 }

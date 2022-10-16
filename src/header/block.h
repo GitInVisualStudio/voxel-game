@@ -33,6 +33,7 @@ typedef enum BLOCK_TYPE {
     GRASS,
     SAND,
     WATER,
+    POPPY,
     INVALID
 } BLOCK_TYPE;
 

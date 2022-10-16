@@ -11,7 +11,7 @@
 
 Game* Game::instance = NULL;
 
-Game::Game(int width, int height) : window(new Window(width, height, "Voxel game", __framebuffer_size_callback)),
+Game::Game(int width, int height) : window(width, height, "Voxel game", __framebuffer_size_callback),
      dudvMap("res/images/dudvmap.png", GL_LINEAR), width(width), height(height)
 {
     Game::instance = this;
@@ -20,7 +20,6 @@ Game::Game(int width, int height) : window(new Window(width, height, "Voxel game
     this->prevChunk = NULL;
     this->camera = new Camera(glm::vec3(0.0f, Chunk::C_HEIGHT, 0), glm::vec3(0.0f, 1.0f, 0.0f));
     this->projection = glm::perspective(glm::radians(FOV), this->width / (float)this->height, NEAR_PLANE, FAR_PLANE);
-    constexpr int SHADOW_WIDTH = 1024*5, SHADOW_HEIGHT = 1024*5;
 
     this->skybox = new Skybox({
         "res/images/right.jpg",
@@ -31,7 +30,7 @@ Game::Game(int width, int height) : window(new Window(width, height, "Voxel game
         "res/images/back.jpg",
     }, this->camera, &this->projection);
 
-    glfwSetCursorPosCallback(window->getWindow(), __mouse_callback);
+    glfwSetCursorPosCallback(window.getWindow(), __mouse_callback);
 
     new TextureAtlas();
     std::shared_ptr<Shader> solidShader = std::make_shared<Shader>("res/shader/block.vs", "res/shader/block.fs");
@@ -47,7 +46,8 @@ Game::Game(int width, int height) : window(new Window(width, height, "Voxel game
     this->depthRenderer = new RendererFBO(SHADOW_WIDTH, SHADOW_HEIGHT, false, true, depthShader, {}, depthTransparentShader);
 
     std::shared_ptr<Shader> volumeShader = std::make_shared<Shader>("res/shader/volume.vs", "res/shader/volume.fs");
-    this->volumetricRenderer = new RendererFBO(512, 512, true, true, volumeShader, volumeShader, volumeShader);
+    std::shared_ptr<Shader> volumeTransparentShader = std::make_shared<Shader>("res/shader/volumeLeaf.vs", "res/shader/volume.fs");
+    this->volumetricRenderer = new RendererFBO(512, 512, true, true, volumeShader, volumeShader, volumeTransparentShader);
 
     this->bloomRenderer = new RendererFBO(512, 512, true, true, solidShader, waterShader, transparentShader);
 
@@ -128,7 +128,7 @@ void Game::start() {
     this->depthRenderer->setupShaders(this->projection);
     this->reflectionRenderer->setupShaders(this->projection);
 
-    while(window->isRunning()) {
+    while(window.isRunning()) {
 
         this->deltaTime = glfwGetTime() - lastTime;
         lastTime = glfwGetTime();
@@ -153,7 +153,7 @@ void Game::start() {
         this->bloomRenderer->renderColorFBO(quad, bloomQuad);
         this->volumetricRenderer->renderColorFBO(quad, volumeQuad);
         glEnable(GL_DEPTH_TEST);
-        window->update();
+        window.update();
     }
 }
 
@@ -205,20 +205,11 @@ void Game::render() {
     lightSpaceMatrix = this->getLightSpaceMatrix(lightPos, near_plane, far_plane, SHADOW_SIZE);
     lightPos = -lightPos;
 
-    glActiveTexture(GL_TEXTURE0);
-    TextureAtlas::instance->bind();
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, this->skybox->texture);
-
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, this->depthRenderer->getDepthMap());
-
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, this->reflectionRenderer->getColorMap());
-
-    glActiveTexture(GL_TEXTURE4);
-    this->dudvMap.bind();
+    TextureAtlas::instance->bind(0);
+    this->skybox->bind(1);
+    this->depthRenderer->bindDepthMap(2);
+    this->reflectionRenderer->bindColorMap(3);
+    this->dudvMap.bind(4);
 
     this->depthRenderer->updateShaders(this->camera, lightSpaceMatrix, lightPos);
     this->depthRenderer->render(sortedChunks);
@@ -245,15 +236,16 @@ void Game::render() {
 }
 
 Game::~Game() {
-    delete this->skybox;
     for (Chunk* chunk : this->chunks)
         delete chunk;
-    delete this->camera;
     delete this->bloomRenderer;
     delete this->volumetricRenderer;
-    delete this->worldRenderer;
     delete this->depthRenderer;
-    delete this->window;
+    delete this->reflectionRenderer;
+    delete this->worldRenderer;
+    delete TextureAtlas::instance;
+    delete this->skybox;
+    delete this->camera;
 }
 
 void Game::__framebuffer_size_callback(GLFWwindow*, int width, int height) {
@@ -281,10 +273,12 @@ void Game::mouse_callback(double x, double y) {
 }
 
 void Game::processInput() {
-    GLFWwindow* window = this->window->getWindow();
+    GLFWwindow* window = this->window.getWindow();
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(this->window.getWindow(), true);
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) 
-        glfwSetWindowShouldClose(window, true);    
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) 
+        deltaTime*=5;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         this->camera->processKeyboard(FORWARD, deltaTime);
@@ -306,19 +300,14 @@ void Game::processInput() {
 
     if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS) {
         this->wireframe = !this->wireframe;
-        if (this->wireframe)
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        else
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glPolygonMode(GL_FRONT_AND_BACK, this->wireframe ? GL_LINE : GL_FILL);
     }
 }
 
 Block& Game::getBlockAt(glm::vec3 pos) {
-    for (Chunk* c : this->chunks) {
-        if (glm::all(glm::greaterThanEqual(pos, c->getPos())) && glm::all(glm::lessThan(pos, c->getPos() + Chunk::CHUNK_SIZE))) {
-            return c->getBlockAt(pos - c->getPos());
-        }
-    }
+    Chunk* chunk = this->getChunkAt(pos);
+    if (chunk)
+        return chunk->getBlockAt(pos - chunk->getPos());
     return Block::invalid;
 }
 
@@ -328,17 +317,15 @@ Block& Game::getBlockAt(const int x, const int y, const int z) {
 
 Chunk* Game::getChunkAt(const int x, const int y, const int z) {
     glm::vec3 pos(x, y, z);
-    for (Chunk* c : this->chunks) 
-        if (c->getPos() == pos) 
-            return c;
-    return this->chunks[0];
+    return *std::find_if(std::begin(this->chunks), std::end(this->chunks), [&pos](Chunk* c) {
+        return c->getPos() == pos;
+    });
 }
 
 Chunk* Game::getChunkAt(glm::vec3 pos) {
-    for (Chunk* c : this->chunks) 
-        if (glm::all(glm::greaterThanEqual(pos, c->getPos())) && glm::all(glm::lessThan(pos, c->getPos() + Chunk::CHUNK_SIZE))) 
-            return c;
-    return NULL;
+    return *std::find_if(std::begin(this->chunks), std::end(this->chunks), [&pos](Chunk* c) {
+        return glm::all(glm::greaterThanEqual(pos, c->getPos())) && glm::all(glm::lessThan(pos, c->getPos() + Chunk::CHUNK_SIZE)); 
+    });
 }
 
 glm::mat4 Game::getLightSpaceMatrix(glm::vec3& pos, float near, float far, float size) {

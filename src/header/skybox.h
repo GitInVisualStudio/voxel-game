@@ -13,14 +13,15 @@ class Camera;
 class Skybox {
     private:
         VertexArray<float> mesh;
-        Shader* shader;
+        Shader shader;
         Camera* camera;
         glm::mat4* projection;
-    public:
         unsigned int texture;
+    public:
         Skybox(std::vector<std::string> images, Camera* camera, glm::mat4* projection);
         ~Skybox();
         void render();
+        void bind(int id=-1);
 };
 
 #endif

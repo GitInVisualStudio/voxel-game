@@ -27,6 +27,7 @@ void main()
     volumeValue = 1 - volumeValue;
     volumeValue = pow(volumeValue, 5);
     volumeValue = max(volumeValue, 0.15);
-    FragColor = vec4(vec3(0), 1 - volumeValue);
+    volumeValue = 1 - volumeValue;
+    FragColor = vec4(vec3(0), volumeValue);
 }
 

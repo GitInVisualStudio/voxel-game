@@ -4,13 +4,13 @@
 Framebuffer::Framebuffer() : FBO(0), depthMap(0), colorMap(0), width(0), height(0) {
 }
 
-Framebuffer::Framebuffer(int width, int height, bool color, bool depth) {
+Framebuffer::Framebuffer(int width, int height, bool color, bool depth, int target) {
     this->colorMap = 0;
     this->depthMap = 0;
     this->width = width;
     this->height = height;
     glGenFramebuffers(1, &this->FBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, this->FBO);
+    glBindFramebuffer(target, this->FBO);
     
     if (depth) {
         glGenTextures(1, &this->depthMap);
@@ -23,7 +23,7 @@ Framebuffer::Framebuffer(int width, int height, bool color, bool depth) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
         float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);  
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depthMap, 0);
+        glFramebufferTexture2D(target, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depthMap, 0);
 
         glBindTexture(GL_TEXTURE_2D, 0);
     }
@@ -42,13 +42,13 @@ Framebuffer::Framebuffer(int width, int height, bool color, bool depth) {
 
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->colorMap, 0);
+        glFramebufferTexture2D(target, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->colorMap, 0);
     } else {
         glDrawBuffer(GL_NONE);
     }    
     
     glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+    glBindFramebuffer(target, 0); 
 }
 
 Framebuffer::~Framebuffer() {
@@ -85,4 +85,20 @@ void Framebuffer::renderColorFBO(const VertexArray<float>& quad, const Shader& s
 
 void Framebuffer::renderDepthFBO(const VertexArray<float>& quad, const Shader& shader) {
     this->renderFBO(quad, shader, this->depthMap);
+}
+
+int Framebuffer::getFBO() const {
+    return this->FBO;
+}
+
+void Framebuffer::bindColorMap(int id) const {
+    if (id != -1)
+        glActiveTexture(GL_TEXTURE0 + id);
+    glBindTexture(GL_TEXTURE_2D, this->colorMap);
+}
+
+void Framebuffer::bindDepthMap(int id) const {
+    if (id != -1)
+        glActiveTexture(GL_TEXTURE0 + id);
+    glBindTexture(GL_TEXTURE_2D, this->depthMap);
 }

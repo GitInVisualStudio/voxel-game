@@ -45,7 +45,10 @@ void Chunk::load(glm::vec3 pos) {
             for (int y = C_HEIGHT - 1; y >= 0; y--) {
                 int index = x * C_WIDTH + y * C_WIDTH * C_WIDTH + z;
                 if (y - 1 == height && rand_float() < 0.2f && height > WATER_HEIGHT) {
-                    this->blocks[index] = Block(glm::vec3(x, y, z), GRASS);
+                    if (rand_float() < 0.95)
+                        this->blocks[index] = Block(glm::vec3(x, y, z), GRASS);
+                    else
+                        this->blocks[index] = Block(glm::vec3(x, y, z), POPPY);
                 } else if (y < height) {
                     this->blocks[index] = Block(glm::vec3(x, y, z), STONE);
                 } else  if (y > height) {
@@ -101,9 +104,12 @@ void Chunk::generateMesh() {
                     continue;
                 }
                 if (type == WATER) {
-                    const glm::vec3& direction = BlockUtils::directions[0];
-                    if (this->getBlockAt(current.getPos() + direction).getType() == AIR) {
-                        current.addVertices(this->waterMesh, (BlockUtils::FACES)0);
+                    for (unsigned int iDir = 0; iDir < BlockUtils::directions.size(); iDir++) {
+                        const glm::vec3& direction = BlockUtils::directions[iDir];
+                        const Block& neighbourBlock = this->getBlockAt(current.getPos() + direction);
+                        if (!neighbourBlock.isSolid() && neighbourBlock.getType() != WATER) {
+                            current.addVertices(this->waterMesh, (BlockUtils::FACES)iDir);
+                        }
                     }
                     filled = false;
                 } else if (current.isSolid()) {

@@ -2,9 +2,8 @@
 
 TextureAtlas* TextureAtlas::instance = NULL;
 
-TextureAtlas::TextureAtlas() {
+TextureAtlas::TextureAtlas() : Texture2D("res/images/atlas.png") {
     TextureAtlas::instance = this;
-    this->texture = Texture2D("res/images/atlas.png");
     this->init();
 }
 
@@ -19,29 +18,17 @@ void TextureAtlas::init() {
     this->setPosition(DIRT_SIDE, index++);
     this->setPosition(GRASS, index++);
     this->setPosition(WATER, index++);
-    this->setPosition(SAND, index++);
+    this->setPosition(SAND, index++);   
+    this->setPosition(POPPY, index++);
 }
 
 glm::vec4 TextureAtlas::getPosition(BLOCK_TYPE type) {
     return this->map[(int)type];
 }
 
-void TextureAtlas::bind() {
-    this->texture.bind();
-}
-
 void TextureAtlas::setPosition(BLOCK_TYPE type, int index) {
-    float x = 0;
-    float y = 0;
-    for (int i = 0; i <= index; i++) {
-
-        if (i == index)
-            this->map[type] = glm::vec4(x, y, x + IMG_SIZE, y + IMG_SIZE);
-
-        x += IMG_SIZE;
-        if (x >= this->texture.getWidth()) {
-            x = 0;
-            y += IMG_SIZE;
-        }
-    }
+    index *= IMG_SIZE;
+    float x = index % this->getWidth();
+    float y = (int)(index / this->getWidth()) * IMG_SIZE;
+    this->map[type] = glm::vec4(x, y, x + IMG_SIZE, y + IMG_SIZE);
 }

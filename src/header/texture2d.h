@@ -12,9 +12,9 @@ class Texture2D {
     public:
         Texture2D();
         Texture2D(const char* path, int interpolation=GL_NEAREST);
-        ~Texture2D();
+        virtual ~Texture2D();
         void load(const char* path, int interpolation=GL_NEAREST);
-        void bind();
+        void bind(int id=-1);
         int getWidth() const;
         int getHeight() const;
 };

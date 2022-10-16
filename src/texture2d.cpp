@@ -29,10 +29,12 @@ void Texture2D::load(const char* path, int interpolation) {
 }
 
 Texture2D::~Texture2D() {
-    // glDeleteTextures(1, &this->handle);
+    glDeleteTextures(1, &this->handle);
 }
 
-void Texture2D::bind() {
+void Texture2D::bind(int id) {
+    if (id != -1)
+        glActiveTexture(GL_TEXTURE0 + id);
     glBindTexture(GL_TEXTURE_2D, this->handle);
 }
 

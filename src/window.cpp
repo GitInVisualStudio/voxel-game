@@ -37,6 +37,7 @@ Window::Window(int width, int height, const char* title, callback_func callback)
 }
 
 Window::~Window() {
+    glfwDestroyWindow(this->window);
     glfwTerminate();
 }
 

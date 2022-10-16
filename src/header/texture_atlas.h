@@ -10,9 +10,8 @@
 #include <vector>
 #include <unordered_map>
 
-class TextureAtlas {
+class TextureAtlas : public Texture2D{
     private:
-        Texture2D texture;
         constexpr static int IMG_SIZE = 16;
         std::unordered_map<int, glm::vec4> map;
         void setPosition(BLOCK_TYPE type, int index);
@@ -20,8 +19,8 @@ class TextureAtlas {
     public:
         static TextureAtlas* instance;
         TextureAtlas();
+        ~TextureAtlas() {};
         void init();
-        void bind();
         glm::vec4 getPosition(BLOCK_TYPE type);
 };
 
