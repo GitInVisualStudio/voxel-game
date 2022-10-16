@@ -317,15 +317,17 @@ Block& Game::getBlockAt(const int x, const int y, const int z) {
 
 Chunk* Game::getChunkAt(const int x, const int y, const int z) {
     glm::vec3 pos(x, y, z);
-    return *std::find_if(std::begin(this->chunks), std::end(this->chunks), [&pos](Chunk* c) {
+    const auto& result = std::find_if(std::begin(this->chunks), std::end(this->chunks), [&pos](Chunk* c) {
         return c->getPos() == pos;
     });
+    return result == std::end(this->chunks) ? NULL : *result;
 }
 
 Chunk* Game::getChunkAt(glm::vec3 pos) {
-    return *std::find_if(std::begin(this->chunks), std::end(this->chunks), [&pos](Chunk* c) {
+    const auto& result = std::find_if(std::begin(this->chunks), std::end(this->chunks), [&pos](Chunk* c) {
         return glm::all(glm::greaterThanEqual(pos, c->getPos())) && glm::all(glm::lessThan(pos, c->getPos() + Chunk::CHUNK_SIZE)); 
     });
+    return result == std::end(this->chunks) ? NULL : *result;
 }
 
 glm::mat4 Game::getLightSpaceMatrix(glm::vec3& pos, float near, float far, float size) {
