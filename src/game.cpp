@@ -8,6 +8,7 @@
 #include <glm/gtx/vector_angle.hpp>
 #include <algorithm>
 #include <memory>
+#include "header/bloom.h"
 
 Game* Game::instance = NULL;
 
@@ -33,20 +34,20 @@ Game::Game(int width, int height) : window(width, height, "Voxel game", __frameb
     glfwSetCursorPosCallback(window.getWindow(), __mouse_callback);
 
     new TextureAtlas();
-    std::shared_ptr<Shader> solidShader = std::make_shared<Shader>("res/shader/block.vs", "res/shader/block.fs");
-    std::shared_ptr<Shader> waterShader = std::make_shared<Shader>("res/shader/water.vs", "res/shader/water.fs");
-    std::shared_ptr<Shader> transparentShader = std::make_shared<Shader>("res/shader/leaf.vs", "res/shader/block.fs");
+    std::shared_ptr<Shader> solidShader = std::make_shared<Shader>("block.vs", "block.fs");
+    std::shared_ptr<Shader> waterShader = std::make_shared<Shader>("water.vs", "water.fs");
+    std::shared_ptr<Shader> transparentShader = std::make_shared<Shader>("leaf.vs", "block.fs");
     this->worldRenderer = new Renderer(solidShader, waterShader, transparentShader);
 
-    std::shared_ptr<Shader> reflectionShader = std::make_shared<Shader>("res/shader/reflection.vs", "res/shader/reflection.fs");
+    std::shared_ptr<Shader> reflectionShader = std::make_shared<Shader>("reflection.vs", "reflection.fs");
     this->reflectionRenderer = new RendererFBO(512, 512, true, true, reflectionShader, {}, reflectionShader);
 
-    std::shared_ptr<Shader> depthShader = std::make_shared<Shader>("res/shader/depth.vs", "res/shader/depth.fs");
-    std::shared_ptr<Shader> depthTransparentShader = std::make_shared<Shader>("res/shader/depthLeaf.vs", "res/shader/depth.fs");
+    std::shared_ptr<Shader> depthShader = std::make_shared<Shader>("depth.vs", "depth.fs");
+    std::shared_ptr<Shader> depthTransparentShader = std::make_shared<Shader>("depthLeaf.vs", "depth.fs");
     this->depthRenderer = new RendererFBO(SHADOW_WIDTH, SHADOW_HEIGHT, false, true, depthShader, {}, depthTransparentShader);
 
-    std::shared_ptr<Shader> volumeShader = std::make_shared<Shader>("res/shader/volume.vs", "res/shader/volume.fs");
-    std::shared_ptr<Shader> volumeTransparentShader = std::make_shared<Shader>("res/shader/volumeLeaf.vs", "res/shader/volume.fs");
+    std::shared_ptr<Shader> volumeShader = std::make_shared<Shader>("volume.vs", "volume.fs");
+    std::shared_ptr<Shader> volumeTransparentShader = std::make_shared<Shader>("volumeLeaf.vs", "volume.fs");
     this->volumetricRenderer = new RendererFBO(512, 512, true, true, volumeShader, volumeShader, volumeTransparentShader);
 
     this->bloomRenderer = new RendererFBO(512, 512, true, true, solidShader, waterShader, transparentShader);
@@ -119,8 +120,8 @@ void Game::start() {
         
     double fpsTime = glfwGetTime();
 
-    Shader volumeQuad("res/shader/quad.vs", "res/shader/volumeQuad.fs");
-    Shader bloomQuad("res/shader/quad.vs", "res/shader/bloom.fs");
+    Shader volumeQuad("quad.vs", "volumeQuad.fs");
+    Bloom bloom(512, 512, 6);
 
     this->bloomRenderer->setupShaders(this->projection);
     this->worldRenderer->setupShaders(this->projection);
@@ -141,16 +142,16 @@ void Game::start() {
         
         this->processInput();
 
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         this->render();
 
-        glViewport(0, 0, this->width, this->height);    
-
+        bloom.render(this->bloomRenderer->getColorMap());
         //TODO: render post processing
+        glViewport(0, 0, this->width, this->height);    
         glDisable(GL_DEPTH_TEST);
-        this->bloomRenderer->renderColorFBO(quad, bloomQuad);
+        bloom.renderFramebuffer();
         this->volumetricRenderer->renderColorFBO(quad, volumeQuad);
         glEnable(GL_DEPTH_TEST);
         window.update();

@@ -34,7 +34,9 @@ Shader::~Shader() {
 }
 
 unsigned int Shader::createShader(const char* path, GLenum type) {
-    std::ifstream file(path);
+    std::string filename(path);
+    filename = std::string("res/shader/") + filename;
+    std::ifstream file(filename);
 
     std::string fileStr((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
@@ -52,7 +54,7 @@ unsigned int Shader::createShader(const char* path, GLenum type) {
     if(!success)
     {
         glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        std::cout << path << std::endl;
+        std::cout << filename << std::endl;
         std::cout << "ERROR::SHADER::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
 

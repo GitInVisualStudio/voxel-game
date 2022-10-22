@@ -63,16 +63,15 @@ void Framebuffer::use() {
 }
 
 
-int Framebuffer::getDepthMap() const {
+unsigned int Framebuffer::getDepthMap() const {
     return this->depthMap;
 }
 
-int Framebuffer::getColorMap() const {
+unsigned int Framebuffer::getColorMap() const {
     return this->colorMap;
 }
 
 void Framebuffer::renderFBO(const VertexArray<float>& quad, const Shader& shader, int handle) {
-    quad.use();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, handle);
     shader.use();
@@ -87,7 +86,7 @@ void Framebuffer::renderDepthFBO(const VertexArray<float>& quad, const Shader& s
     this->renderFBO(quad, shader, this->depthMap);
 }
 
-int Framebuffer::getFBO() const {
+unsigned int Framebuffer::getFBO() const {
     return this->FBO;
 }
 

@@ -1,7 +1,7 @@
 #include "header/skybox.h"
 
 Skybox::Skybox(std::vector<std::string> images, Camera* camera, glm::mat4* projection) 
-	: shader("res/shader/skybox.vs", "res/shader/skybox.fs") 
+	: shader("skybox.vs", "skybox.fs") 
 {
 	this->camera = camera;
 	this->projection = projection;

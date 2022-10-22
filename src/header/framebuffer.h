@@ -16,9 +16,9 @@ class Framebuffer {
         Framebuffer(int width, int height, bool color=true, bool depth=true, int target=GL_FRAMEBUFFER);
         ~Framebuffer();
         void use();
-        int getDepthMap() const;
-        int getColorMap() const;
-        int getFBO() const;
+        unsigned int getDepthMap() const;
+        unsigned int getColorMap() const;
+        unsigned int getFBO() const;
         void renderColorFBO(const VertexArray<float>& quad, const Shader& shader);
         void renderDepthFBO(const VertexArray<float>& quad, const Shader& shader);
         void bindDepthMap(int id=-1) const;
