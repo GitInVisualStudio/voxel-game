@@ -6,11 +6,11 @@ CC      	= g++
 CFLAGS  	= -std=c++17 -Wall -Wextra -D_FORTIFY_SOURCE=2 -pipe -Werror=format-security -O2
 LIBS 		= -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -pthread
 
-SRCS	 	= $(wildcard $(SRC_DIR)*.cpp) $(wildcard $(SRC_DIR)*.c)
+SRCS	 	= $(wildcard $(SRC_DIR)*.cpp) $(wildcard $(SRC_DIR)**/*.c) $(wildcard $(SRC_DIR)**/*.cpp) $(wildcard $(SRC_DIR)**/**/*.cpp)
 C_FILES 	= $(SRCS:%.c=%.o)
 OBJS	 	= $(C_FILES:%.cpp=%.o)
 
-run: compile
+run: compile clear
 	$(BUILD_DIR)$(OUTPUT_FILE)
 
 install:
@@ -23,13 +23,12 @@ endif
 
 compile: setup $(OBJS)
 	$(CC) -o $(BUILD_DIR)$(OUTPUT_FILE) $(OBJS) $(CFLAGS) $(LIBS)
-	rm $(SRC_DIR)*.o
 
 %.o: %.cpp
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 clear:
-	rm $(SRC_DIR)*.o
+	rm $(OBJS)
 
 valgrind: compile
 	valgrind --track-origins=yes --leak-check=full $(BUILD_DIR)$(OUTPUT_FILE)

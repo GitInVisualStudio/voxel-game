@@ -1,14 +1,14 @@
-#include "header/game.h"
-#include "header/block.h"
-#include "header/vertex_array.h"
-#include "header/texture_atlas.h"
+#include "game.h"
+#include "world/block.h"
+#include "gfx/vertex_array.h"
+#include "gfx/texture_atlas.h"
+#include "gfx/effect/bloom.h"
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/vector_angle.hpp>
 #include <algorithm>
 #include <memory>
-#include "header/bloom.h"
 
 Game* Game::instance = NULL;
 
@@ -121,7 +121,7 @@ void Game::start() {
     double fpsTime = glfwGetTime();
 
     Shader volumeQuad("quad.vs", "volumeQuad.fs");
-    Bloom bloom(512, 512, 6);
+    Bloom bloom(512, 512, 4);
 
     this->bloomRenderer->setupShaders(this->projection);
     this->worldRenderer->setupShaders(this->projection);
@@ -144,7 +144,7 @@ void Game::start() {
 
         glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        this->camera->update(deltaTime);
         this->render();
 
         bloom.render(this->bloomRenderer->getColorMap());
