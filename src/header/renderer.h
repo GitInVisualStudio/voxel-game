@@ -14,9 +14,9 @@ class Chunk;
 class Renderer {
     protected:
         std::shared_ptr<Shader> solid, water, transparent;
-        void updateShader(std::shared_ptr<Shader> & shader, Camera* camera, glm::mat4& lightSpaceMatrix, glm::vec3& lightPos);
-        void setupShader(std::shared_ptr<Shader> & shader, glm::mat4& projection);
-        void setDefaultUniforms(std::shared_ptr<Shader> & shader);
+        void updateShader(std::shared_ptr<Shader>& shader, Camera* camera, glm::mat4& lightSpaceMatrix, glm::vec3& lightPos);
+        void setupShader(std::shared_ptr<Shader>& shader, glm::mat4& projection);
+        void setDefaultUniforms(std::shared_ptr<Shader>& shader);
 
     public:
         Renderer() {};

@@ -10,6 +10,9 @@ SRCS	 	= $(wildcard $(SRC_DIR)*.cpp) $(wildcard $(SRC_DIR)*.c)
 C_FILES 	= $(SRCS:%.c=%.o)
 OBJS	 	= $(C_FILES:%.cpp=%.o)
 
+run: compile
+	$(BUILD_DIR)$(OUTPUT_FILE)
+
 install:
 	sudo apt install libglfw3 libglfw3-dev libxxf86vm-dev libxi-dev libxinerama-dev freeglut3-dev libassimp-dev libglm-dev
 
@@ -24,9 +27,6 @@ compile: setup $(OBJS)
 
 %.o: %.cpp
 	$(CC) -c $< -o $@ $(CFLAGS)
-
-run: compile
-	$(BUILD_DIR)$(OUTPUT_FILE)
 
 clear:
 	rm $(SRC_DIR)*.o

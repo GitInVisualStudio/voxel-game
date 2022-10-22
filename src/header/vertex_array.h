@@ -33,6 +33,7 @@ class VertexArray {
          * @param offset 
          */
         void setAttributeI(unsigned int index, unsigned int size, unsigned int type, unsigned int stride, unsigned int offset);
+        unsigned int getVAO() const;
 };
 
 template <typename T> 
@@ -110,7 +111,14 @@ void VertexArray<T>::use() const {
 template <typename T>
 void VertexArray<T>::render(unsigned int mode) const {
     this->use();
-    glDrawArrays(mode, 0, this->triangles);
+    if (this->triangles > 0)
+        glDrawArrays(mode, 0, this->triangles);
     glBindVertexArray(0);
 }
+
+template <typename T>
+unsigned int VertexArray<T>::getVAO() const {
+    return this->handle;
+}
+
 #endif
