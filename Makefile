@@ -10,7 +10,7 @@ SRCS	 	= $(wildcard $(SRC_DIR)*.cpp) $(wildcard $(SRC_DIR)**/*.c) $(wildcard $(S
 C_FILES 	= $(SRCS:%.c=%.o)
 OBJS	 	= $(C_FILES:%.cpp=%.o)
 
-run: compile clear
+run: compile
 	$(BUILD_DIR)$(OUTPUT_FILE)
 
 install:
@@ -23,6 +23,7 @@ endif
 
 compile: setup $(OBJS)
 	$(CC) -o $(BUILD_DIR)$(OUTPUT_FILE) $(OBJS) $(CFLAGS) $(LIBS)
+	rm $(OBJS)
 
 %.o: %.cpp
 	$(CC) -c $< -o $@ $(CFLAGS)

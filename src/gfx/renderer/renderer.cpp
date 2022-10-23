@@ -14,13 +14,13 @@ Renderer::Renderer(std::shared_ptr<Shader> solid, std::shared_ptr<Shader> water,
 void Renderer::render(const std::vector<std::pair<Chunk*, float>>& chunks, Skybox* skybox) {
     if (skybox)
         skybox->render();
-    for (const auto& chunk : chunks) {
+    for (const auto& [chunk, _] : chunks) {
         if (solid.get() != nullptr && solid->valid())
-            chunk.first->renderSolid(*solid);
+            chunk->renderSolid(*solid);
         if (water.get() != nullptr && water->valid())
-            chunk.first->renderWater(*water);
+            chunk->renderWater(*water);
         if (transparent.get() != nullptr && transparent->valid())
-            chunk.first->renderTransparent(*transparent);
+            chunk->renderTransparent(*transparent);
     }
 }
 
