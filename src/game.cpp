@@ -3,17 +3,20 @@
 #include "gfx/vertex_array.h"
 #include "gfx/texture_atlas.h"
 #include "gfx/effect/bloom.h"
+#include "entity/move_component.h"
+#include "entity/collision_component.h"
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/vector_angle.hpp>
 #include <algorithm>
 #include <memory>
+#include <limits>
 
 Game* Game::instance = NULL;
 
 Game::Game(int width, int height) : window(width, height, "Voxel game", __framebuffer_size_callback),
-     dudvMap("res/images/dudvmap.png", GL_LINEAR), width(width), height(height)
+     dudvMap("res/images/dudvmap.png", GL_LINEAR), width(width), height(height), player(glm::vec3(0.0f, Chunk::C_HEIGHT, 0.0f))
 {
     Game::instance = this;
     this->deltaTime = 0;
@@ -48,7 +51,7 @@ Game::Game(int width, int height) : window(width, height, "Voxel game", __frameb
 
     std::shared_ptr<Shader> volumeShader = std::make_shared<Shader>("volume.vs", "volume.fs");
     std::shared_ptr<Shader> volumeTransparentShader = std::make_shared<Shader>("volumeLeaf.vs", "volume.fs");
-    this->volumetricRenderer = new RendererFBO(512, 512, true, true, volumeShader, volumeShader, volumeTransparentShader);
+    this->volumetricRenderer = new RendererFBO(512, 512, true, true, volumeShader, {}, volumeTransparentShader);
 
     this->bloomRenderer = new RendererFBO(512, 512, true, true, solidShader, waterShader, transparentShader);
 
@@ -59,6 +62,9 @@ Game::Game(int width, int height) : window(width, height, "Voxel game", __frameb
             this->chunks.push_back(new_chunk);
         }
     }
+
+    this->player.addComponent<MoveComponent>();
+    this->player.addComponent<CollisionComponent>();
 }
 
 void Game::updateChunks() {
@@ -122,6 +128,7 @@ void Game::start() {
 
     Shader volumeQuad("quad.vs", "volumeQuad.fs");
     Bloom bloom(512, 512, 4);
+    SimpleBlur blur(512, 512), lowRes(256, 256);
 
     this->bloomRenderer->setupShaders(this->projection);
     this->worldRenderer->setupShaders(this->projection);
@@ -142,17 +149,23 @@ void Game::start() {
         
         this->processInput();
 
-        glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+        this->player.update(deltaTime);
+        this->camera->setPosition(this->player.getPosition() + glm::vec3(0.4f, 1.8f, 0.4f));
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         this->camera->update(deltaTime);
         this->render();
 
         bloom.render(this->bloomRenderer->getColorMap());
+        lowRes.render(this->volumetricRenderer->getColorMap());
+        blur.render(lowRes.getFramebuffer());
         //TODO: render post processing
         glViewport(0, 0, this->width, this->height);    
         glDisable(GL_DEPTH_TEST);
         bloom.renderFramebuffer();
-        this->volumetricRenderer->renderColorFBO(quad, volumeQuad);
+        blur.getFramebuffer().renderColorFBO(quad, volumeQuad);
+        // this->volumetricRenderer->renderColorFBO(quad, volumeQuad);
         glEnable(GL_DEPTH_TEST);
         window.update();
     }
@@ -277,27 +290,42 @@ void Game::processInput() {
     GLFWwindow* window = this->window.getWindow();
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(this->window.getWindow(), true);
-
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) 
-        deltaTime*=5;
-
+    glm::vec3 velocity(0.0f);
+    glm::vec3 dir = this->camera->getDirection();
+    dir.y = 0;
+    dir = glm::normalize(dir);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        this->camera->processKeyboard(FORWARD, deltaTime);
+        velocity += dir;
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        this->camera->processKeyboard(BACK, deltaTime);
+        velocity -= dir;
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        this->camera->processKeyboard(UP, deltaTime);
-
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) 
+        // if(player.getOnGround())
+            velocity += this->camera->getUp() * 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+        Hit hit = this->rayCast(32.0f);
+        if (hit.hit) {
+            // hit.position1
+            glm::vec3 blockPos = hit.position + hit.normal;
+            Block& b = this->getBlockAt(blockPos);
+            // we are outside of the chunk border
+            if (b.getType() == INVALID) return;
+            b.setType(STONE);
+            getChunkAt(blockPos)->generateMesh();
+            getChunkAt(blockPos)->generateBuffer();
+        }
+    }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        this->camera->processKeyboard(DOWN, deltaTime);
-
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        this->camera->processKeyboard(LEFT, deltaTime);
+        velocity -= this->camera->getUp();
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        this->camera->processKeyboard(RIGHT, deltaTime);
+        velocity += this->camera->getRight();
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        velocity -= this->camera->getRight();
+
+    this->player.getComponent<MoveComponent>()->addVelocity(velocity);
 
     if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS) {
         this->wireframe = !this->wireframe;
@@ -339,4 +367,41 @@ glm::mat4 Game::getLightSpaceMatrix(glm::vec3& pos, float near, float far, float
         camera->getPosition(),
         glm::vec3(0.0, 1.0, 0.0)
     );
+}
+
+const std::vector<Chunk*>& Game::getChunks() {
+    return this->chunks;
+}
+
+Hit Game::rayCast(float distance) {
+    glm::vec3 ray_dir = this->camera->getDirection() * distance;
+    Ray ray = {
+        .origin = player.getPosition() + glm::vec3(0.4f, 1.8f, 0.4f),
+        .dir = ray_dir
+    };
+    return this->rayCast(ray);
+}
+
+Hit Game::rayCast(Ray ray) {
+    Hit hit = {};
+    hit.t = 1.0f;
+    for (Chunk* c : this->chunks) {
+        if (c->getAABB().intersects(ray).hit) {
+            const Block* blocks = c->getBlocks();
+            for (size_t i = 0; i < Chunk::BLOCKS_LENGTH; i++) {
+                const Block& currentBlock = blocks[i];
+                BLOCK_TYPE type = currentBlock.getType();
+                if (type == AIR || type == INVALID)
+                    continue;
+                AABB blockAABB(currentBlock.getPos() + c->getPos(), glm::vec3(1.0f));
+                Hit newHit = blockAABB.intersects(ray);
+                if (newHit.hit && newHit.t < hit.t)  {
+                    hit = newHit;
+                    // position needs to be blockpos
+                    hit.position = currentBlock.getPos() + c->getPos();
+                }
+            }
+        }
+    }
+    return hit;
 }

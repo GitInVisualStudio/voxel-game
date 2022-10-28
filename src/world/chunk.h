@@ -5,6 +5,7 @@
 #include "../gfx/texture_atlas.h"
 #include "../gfx/vertex_array.h"
 #include "../gfx/shader.h"
+#include "../util/aabb.h"
 #include "worldgen.h"
 #include "block.h"
 #include <vector>
@@ -14,12 +15,14 @@ class Game;
 class Chunk {
 
     public:
-        constexpr static int C_WIDTH = 16, C_HEIGHT = 64, WATER_HEIGHT = 18;
+        constexpr static int C_WIDTH = 16, C_HEIGHT = 63, WATER_HEIGHT = 18;
+        constexpr static int BLOCKS_LENGTH = C_WIDTH * C_WIDTH * C_HEIGHT;
         static glm::vec3 CHUNK_SIZE;
         static siv::PerlinNoise perlin, perlin2, perlin3;
 
     private:
-        Block blocks[C_WIDTH * C_WIDTH * C_HEIGHT];
+        Block blocks[BLOCKS_LENGTH];
+        AABB aabb;
         bool shouldUpdate;
         VertexArray<unsigned int> solidMesh, transparentMesh, waterMesh;
         glm::vec3 position;
@@ -48,7 +51,10 @@ class Chunk {
          */
         Block& getBlockAt(const int x, const int y, const int z);
         Block& getBlockAt(glm::vec3 pos);
+        const Block* getBlocks();
         glm::vec3& getPos();
+
+        AABB& getAABB();
 };
 
 #endif

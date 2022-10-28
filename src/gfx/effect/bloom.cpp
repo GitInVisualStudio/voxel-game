@@ -32,7 +32,6 @@ Framebuffer& Bloom::render(unsigned int textureId) {
     for (int i = (int)this->stages.size() - 2; i >= 0; i--) {
         auto& [blur, combine] = this->stages[i];
         current = combine->render(blur->getFramebuffer(), current);
-        current = blur->render(current);
     }
     return current;
 }

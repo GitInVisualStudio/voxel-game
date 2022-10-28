@@ -10,14 +10,19 @@ typedef struct Ray {
 
 typedef struct Hit {
     bool hit;
+    float t;
     glm::vec3 position;
+    glm::vec3 normal;
 } Hit;
 
 struct AABB {
     glm::vec3 min, max;
     AABB(glm::vec3 pos, glm::vec3 size);
-    AABB expand(glm::vec3 size);
-    Hit intersect(Ray ray);    
+    Hit intersects(Ray ray);
+    bool intersects(AABB b);
+    glm::vec3 intersectionDepth(AABB b);
+    inline glm::vec3 getCenter() const;
+    void toString();
 };
 
 #endif

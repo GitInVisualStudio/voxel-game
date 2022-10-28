@@ -11,7 +11,7 @@ siv::PerlinNoise Chunk::perlin;
 siv::PerlinNoise Chunk::perlin2;
 siv::PerlinNoise Chunk::perlin3;
 
-Chunk::Chunk(glm::vec3 pos, Game* game) {
+Chunk::Chunk(glm::vec3 pos, Game* game) : aabb(pos, CHUNK_SIZE) {
     this->position = pos;
     this->game = game;
     this->solidMesh = VertexArray<unsigned int>();
@@ -27,6 +27,7 @@ double rand_float()
 
 void Chunk::load(glm::vec3 pos) {    
     //clear all old meshes, otherwise old chunk will get rendered at the wrong position
+    aabb = {pos, CHUNK_SIZE};
     this->solidMesh.clear();
     this->transparentMesh.clear();
     this->waterMesh.clear();
@@ -191,4 +192,12 @@ void Chunk::setShouldUpdate(bool value) {
 
 bool Chunk::getShouldUpdate() const {
     return this->shouldUpdate;
+}
+
+AABB& Chunk::getAABB() {
+    return this->aabb;
+}
+
+const Block* Chunk::getBlocks() {
+    return this->blocks;
 }

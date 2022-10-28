@@ -1,6 +1,6 @@
 #include "camera.h"
 
-#define SMOOTH_CAMERA
+// #define SMOOTH_CAMERA
 
 Camera::Camera(glm::vec3 position, glm::vec3 worldUp){
     this->position = position;
@@ -71,7 +71,8 @@ void Camera::updateVectors(){
     dir = glm::normalize(dir);
 
     right = glm::normalize(glm::cross(this->dir, this->worldUp));
-    up = glm::normalize(glm::cross(this->right, dir));
+    // up = glm::normalize(glm::cross(this->right, dir));
+    up = this->worldUp;
 }
 
 glm::mat4 Camera::getViewMatrix() const {
@@ -82,8 +83,20 @@ glm::vec3& Camera::getPosition() {
     return this->position;
 }
 
-glm::vec3 Camera::getDirection() const {
+void Camera::setPosition(glm::vec3 pos) {
+    this->prevPosition = pos;
+}
+
+const glm::vec3& Camera::getDirection() const {
     return this->dir;
+}
+
+const glm::vec3& Camera::getRight() const {
+    return this->right;
+}
+
+const glm::vec3& Camera::getUp() const {
+    return this->up;
 }
 
 void Camera::update(float dt) {

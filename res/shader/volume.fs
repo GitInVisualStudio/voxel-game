@@ -1,7 +1,7 @@
 #version 330 core
 #extension GL_ARB_arrays_of_arrays : require
 
-#define N_STEPS 24
+#define N_STEPS 16
 out vec4 FragColor;
 
 in vec2 TexCoords;
@@ -41,7 +41,7 @@ void main()
     vec3 currentPos = FragPos;
     float sum = 0;
 
-    currentPos += rayStep * ditter[int(gl_FragCoord.x)% 4][int(gl_FragCoord.y)% 4];
+    currentPos += rayStep * ditter[int(gl_FragCoord.x) % 4][int(gl_FragCoord.y) % 4];
 
     for (int i = 0; i <= N_STEPS; i++) {
         sum += shadowCalc(lightSpaceMatrix * vec4(currentPos, 1.0));

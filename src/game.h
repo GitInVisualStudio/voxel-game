@@ -8,6 +8,7 @@
 #include "gfx/window.h"
 #include "world/chunk.h"
 #include "util/camera.h"
+#include "entity/entity.h"
 
 class Game {
     private:
@@ -25,6 +26,7 @@ class Game {
         glm::mat4 projection;
         bool wireframe;
         std::vector<Chunk*> chunks;
+        Entity player;
         void updateChunks();
         glm::mat4 getLightSpaceMatrix(glm::vec3& pos, float near, float far, float size);
     
@@ -43,6 +45,9 @@ class Game {
         Block& getBlockAt(glm::vec3 pos);
         Chunk* getChunkAt(const int x, const int y, const int z);
         Chunk* getChunkAt(glm::vec3 pos);
+        Hit rayCast(float distance);
+        Hit rayCast(Ray ray);
+        const std::vector<Chunk*>& getChunks();
         static void __framebuffer_size_callback(GLFWwindow* window, int width, int height);  
         static void __mouse_callback(GLFWwindow* window, double x, double y);
 };

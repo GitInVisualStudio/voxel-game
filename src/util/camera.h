@@ -35,7 +35,10 @@ class Camera{
         void update(float dt);
         glm::mat4 getViewMatrix() const;
         glm::vec3& getPosition();
-        glm::vec3 getDirection() const;
+        void setPosition(glm::vec3 pos);
+        const glm::vec3& getDirection() const;
+        const glm::vec3& getRight() const;
+        const glm::vec3& getUp() const;
 };
 
 #endif
