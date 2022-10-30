@@ -8,8 +8,6 @@ struct Light {
     vec3 specular;
 };
 
-const float amplitude = 0.08;
-const float period = 0.5;
 const float distortion_strength = 0.003;
 const float distortion_scale = 0.02;
 

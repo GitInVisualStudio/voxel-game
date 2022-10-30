@@ -12,6 +12,11 @@ class VertexArray {
         std::vector<T> data;
 
     public:
+        struct Attribute {
+            unsigned int type;
+            unsigned int size;
+        };
+
         VertexArray();
         VertexArray(std::vector<T> data);
         ~VertexArray();
@@ -33,6 +38,7 @@ class VertexArray {
          * @param offset 
          */
         void setAttributeI(unsigned int index, unsigned int size, unsigned int type, unsigned int stride, unsigned int offset);
+        void setAttributes(std::vector<struct Attribute> attributes);
         unsigned int getVAO() const;
 };
 
@@ -74,6 +80,28 @@ void VertexArray<T>::setAttributeI(unsigned int index, unsigned int size, unsign
     glVertexAttribIPointer(index, size, type, sizeof(T) * stride, (void*)(sizeof(T) * offset));
     glEnableVertexAttribArray(index);
     this->triangles = this->data.size() / stride;
+}
+
+template <typename T>
+void VertexArray<T>::setAttributes(std::vector<struct Attribute> attributes) {
+    this->load();
+    unsigned int stride = 0;
+    for (struct Attribute a : attributes)
+        stride += a.size;
+    unsigned int offset = 0;
+    for (size_t i = 0; i < attributes.size(); i++) {
+        struct Attribute a = attributes[i];
+        switch (a.type) {
+            case GL_FLOAT:
+                this->setAttribute(i, a.size, a.type, stride, offset);
+                break;
+            case GL_UNSIGNED_INT:
+                this->setAttributeI(i, a.size, a.type, stride, offset);
+                break;
+        }
+        offset += a.size;
+    }
+    this->unbind();
 }
 
 template <typename T>

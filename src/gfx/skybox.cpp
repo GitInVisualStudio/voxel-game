@@ -51,6 +51,7 @@ Skybox::Skybox(std::vector<std::string> images, Camera* camera, glm::mat4* proje
 		-1.0f, -1.0f,  1.0f,
 		1.0f, -1.0f,  1.0f
 	});
+	this->mesh.setAttributes({{GL_FLOAT, 3}});
 
 	glGenTextures(1, &this->texture);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, this->texture);
@@ -69,10 +70,6 @@ Skybox::Skybox(std::vector<std::string> images, Camera* camera, glm::mat4* proje
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	this->mesh.load();
-	this->mesh.setAttribute(0, 3, GL_FLOAT, 3, 0);
-	this->mesh.unbind();
 }
 
 Skybox::~Skybox() {

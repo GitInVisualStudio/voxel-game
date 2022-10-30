@@ -108,7 +108,7 @@ void Chunk::generateMesh() {
                     for (unsigned int iDir = 0; iDir < BlockUtils::directions.size(); iDir++) {
                         const glm::vec3& direction = BlockUtils::directions[iDir];
                         const Block& neighbourBlock = this->getBlockAt(current.getPos() + direction);
-                        if (!neighbourBlock.isSolid() && neighbourBlock.getType() != WATER) {
+                        if ((!neighbourBlock.isSolid() && neighbourBlock.getType() != WATER) || (neighbourBlock.getType() != WATER && iDir == 0)) {
                             current.addVertices(this->waterMesh, (BlockUtils::FACES)iDir);
                         }
                     }
@@ -133,15 +133,9 @@ void Chunk::generateMesh() {
 }
 
 void Chunk::generateBuffer() {
-    this->solidMesh.load();
-    this->solidMesh.setAttributeI(0, 1, GL_UNSIGNED_INT, 1, 0);
-    this->solidMesh.unbind();
-    this->transparentMesh.load();
-    this->transparentMesh.setAttributeI(0, 1, GL_UNSIGNED_INT, 1, 0);
-    this->transparentMesh.unbind();
-    this->waterMesh.load();
-    this->waterMesh.setAttributeI(0, 1, GL_UNSIGNED_INT, 1, 0);
-    this->waterMesh.unbind();
+    this->solidMesh.setAttributes({{GL_UNSIGNED_INT, 1}});
+    this->waterMesh.setAttributes({{GL_UNSIGNED_INT, 1}});
+    this->transparentMesh.setAttributes({{GL_UNSIGNED_INT, 1}});
 }
 
 void Chunk::renderMesh(const Shader& shader, VertexArray<unsigned int>& mesh) {

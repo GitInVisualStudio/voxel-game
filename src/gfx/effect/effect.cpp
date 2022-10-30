@@ -13,10 +13,7 @@ Effect::Effect(int width, int height, const char* shader)
     
     // only set the attributes once
     if (!quad.getVAO()) {
-        quad.load();
-        quad.setAttribute(0, 3, GL_FLOAT, 5, 0);
-        quad.setAttribute(1, 2, GL_FLOAT, 5, 3);
-        quad.unbind();
+        quad.setAttributes({{GL_FLOAT, 3}, {GL_FLOAT, 2}});
     }
 }
 
